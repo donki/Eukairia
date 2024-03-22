@@ -1,0 +1,4 @@
+﻿Comandos para crear estructura de datos y actualizarla
+
+dotnet ef migrations add InitialCreate
+dotnet ef database update

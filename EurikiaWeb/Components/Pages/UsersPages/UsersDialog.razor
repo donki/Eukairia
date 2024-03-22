@@ -1,0 +1,59 @@
+﻿@inherits MudDialog
+@using EukairiaWeb.Data.Models
+@using EukairiaWeb.Services
+@inject UsersService UserService
+@inject ISnackbar Snackbar
+
+
+<MudDialog>
+    <DialogContent>
+
+        <MudForm>
+            <MudTextField Label="Correo electrónico" @bind-Value="User.Email" FullWidth Variant="Variant.Filled" />
+             <MudTextField Label="Nombre" @bind-Value="@User.Name" FullWidth  />
+             <MudTextField Label="Contraseña" @bind-Value="@password" InputType="InputType.Password" FullWidth />
+             <MudTextField Label="Confirmar contraseña" @bind-Value="@confirmPassword" InputType="InputType.Password" FullWidth  />
+         </MudForm>
+     </DialogContent>
+     <DialogActions>
+         <MudButton OnClick="Cancel">Cancelar</MudButton>
+         <MudButton OnClick="Save" Color="Color.Primary" Disabled="@(password != confirmPassword && !string.IsNullOrEmpty(password))">Guardar</MudButton>
+     </DialogActions>
+ </MudDialog>
+
+ @code {
+    [Parameter] public User User { get; set; }
+    [Parameter] public EventCallback<User> OnSave { get; set; }
+
+    private string password = string.Empty;
+    private string confirmPassword = string.Empty;
+
+    private async Task Save()
+    {
+        if (!string.IsNullOrEmpty(password))
+        {
+            if (password == confirmPassword)
+            {
+                User.Password = BCrypt.Net.BCrypt.HashPassword(password);
+            }
+            else
+            {
+                Snackbar.Add("Las contraseñas no coinciden", Severity.Error);
+            }
+            await OnSave.InvokeAsync(User);
+            this.Close(DialogResult.Ok(User));
+
+        }
+        else
+        {
+            Snackbar.Add("La contraseña no puede estar vacía", Severity.Error);
+        }
+
+    }
+
+    private void Cancel()
+    {
+        this.Close(DialogResult.Cancel());
+    }
+}
+

@@ -1,0 +1,38 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@layout Layout.LoginLayout
+@using EukairiaWeb.Services
+
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject UsersService UsersService
+
+<div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+    <MudPaper Class="pa-4" Elevation="1" Square="true" MinWidth="600px" Style="margin: auto;">
+        <img src="images/Eukairia.webp" alt="Logo" style="max-width: 150px; margin-bottom: 20px;" />
+        <MudText Typo="Typo.h5" GutterBottom="true">Iniciar sesión</MudText>
+        <MudForm>
+            <MudTextField @bind-Value="username" Label="Nombre de usuario" Variant="Variant.Filled" FullWidth="true" />
+            <MudTextField @bind-Value="password" Label="Contraseña" Variant="Variant.Filled" FullWidth="true" InputType="InputType.Password" Class="mt-4" />
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="DoLogin" FullWidth="true" Class="mt-4">Iniciar Sesión</MudButton>
+        </MudForm>
+    </MudPaper>
+</div>
+
+@code {
+    private string username;
+    private string password;
+
+    private void DoLogin()
+    {
+        var validated = UsersService.ValidateUser(username, password);
+        if (validated)
+        {
+            NavigationManager.NavigateTo("/home");
+        }
+        else
+        {
+            Snackbar.Add("Credenciales no válidas", Severity.Error);
+        }
+    }
+}

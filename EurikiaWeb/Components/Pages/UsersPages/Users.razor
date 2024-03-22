@@ -1,0 +1,99 @@
+﻿@page "/users"
+@rendermode InteractiveServer
+@using EukairiaWeb.Data.Models
+@using EukairiaWeb.Services
+
+@inject IDialogService DialogService
+@inject UsersService UserService
+
+
+
+<MyMudProviders />
+
+<PageTitle>Usuarios</PageTitle>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => OpenUserDialog(new User()))">Agregar Usuario</MudButton>
+<MudTable Items="@users" Dense="true" Hover="true" Striped="true" Filter="FilterFunc" PageSize="10">
+    <ToolBarContent>
+        <MudTextField @bind-Value="searchString" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" @onkeyup="@(e => InvokeAsync(Table.ReloadServerData))" />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Título</MudTh>
+        <MudTh>Nombre de Usuario</MudTh>
+        <MudTh>Nombre</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="Contraseña">@context.Password</MudTd>
+            <MudTd DataLabel="Nombre">@context.Name</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenUserDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteUser(context))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+
+    @code {
+    private MudTable<User> Table;
+    private string searchString = "";
+    private IEnumerable<User> users = Enumerable.Empty<User>(); // Supon que aquí cargas tus usuarios desde alguna fuente, como una base de datos
+
+
+    private Func<User, bool> FilterFunc => user =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (user.Email.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (user.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    };
+
+    private async Task OpenUserDialog(User user = null)
+    {
+        var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = true,
+                Position = DialogPosition.TopCenter
+            };
+
+        var parameters = new DialogParameters();
+        if (user != null) parameters.Add("User", user);
+
+        var dialog = DialogService.Show<UsersDialog>("Usuario", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            users = await UserService.GetUsersAsync(); // Recargar la lista de usuarios
+            StateHasChanged(); // Asegúrate de que la UI se actualice
+        }
+    }
+
+    private async Task DeleteUser(User user)
+    {
+        bool? result = await DialogService.ShowMessageBox("Confirmación", $"¿Estás seguro de que quieres eliminar a {user.Name}?", yesText: "Eliminar", cancelText: "Cancelar");
+
+        if (result == true)
+        {
+            await UserService.DeleteUserAsync(user);
+            users = await UserService.GetUsersAsync(); // Recargar la lista
+            StateHasChanged(); // Asegúrate de que la UI se actualice
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await UserService.GetUsersAsync();
+    }
+
+
+}
+
