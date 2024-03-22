@@ -1,7 +1,25 @@
-﻿<MudNavMenu>
+﻿@rendermode InteractiveServer
+
+@inject ProtectedSessionStorage SessionStorage
+@inject NavigationManager NavigationManager
+
+<MudNavMenu>
     <MudNavLink Href="home" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
     <MudNavLink Href="users" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person2">Usuarios</MudNavLink>
     <MudNavLink Href="security" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person2">Seguridad</MudNavLink>
     <MudNavLink Href="timesummary" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.CalendarMonth">Registro horario</MudNavLink>
-    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Logout">Salir</MudNavLink>
+    <MudNavLink @onclick="Dologout" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Logout">Salir</MudNavLink>
 </MudNavMenu>
+
+@code {
+
+    async Task Dologout()
+    {
+        await SessionStorage.SetAsync("isAuthenticated", false);
+        await SessionStorage.SetAsync("sessionExpiration", DateTime.Now.AddDays(-1000));
+        await SessionStorage.SetAsync("sessionData", null);
+
+        NavigationManager.NavigateTo("/");
+    }
+
+}

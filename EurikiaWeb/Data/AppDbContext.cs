@@ -13,6 +13,9 @@ namespace EukairiaWeb.Data
 
         public DbSet<Permission> Permissions { get; set; }
 
+        public DbSet<TimeTracking> TimeTrackings { get; set; }
+
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=Eukairia.db");
 

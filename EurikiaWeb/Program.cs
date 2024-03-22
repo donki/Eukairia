@@ -21,16 +21,21 @@ namespace EukairiaWeb
 
 
             builder.Services.AddScoped<UsersService>();
+            builder.Services.AddScoped<TimeTrackingService>();
+
+
+
 
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
             builder.Services.AddMudServices(config =>
             {
-                config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomCenter;
+                config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.TopCenter;
                 config.SnackbarConfiguration.PreventDuplicates = false;
                 config.SnackbarConfiguration.NewestOnTop = true;
                 config.SnackbarConfiguration.ShowCloseIcon = true;
+                config.SnackbarConfiguration.BackgroundBlurred = true;
                 config.SnackbarConfiguration.VisibleStateDuration = 5000;
                 config.SnackbarConfiguration.HideTransitionDuration = 500;
                 config.SnackbarConfiguration.ShowTransitionDuration = 500;
