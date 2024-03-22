@@ -8,3 +8,9 @@ EukairiaApp/obj/
 EurikiaWeb/bin/
 
 EurikiaWeb/obj/
+
+*.db
+
+EurikiaWeb/Eukairia.db-shm
+
+EurikiaWeb/Eukairia.db-wal

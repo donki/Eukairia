@@ -16,6 +16,11 @@ namespace EukairiaWeb.Services
 
         public async Task<List<User>> GetUsersAsync() => await _context.Users.ToListAsync();
 
+        public User GetUserByEmail(string email)
+        {
+            return _context.Users.ToList().Find(x => x.Email.Equals(email));
+        }
+
         public async Task<User> AddUserAsync(User user)
         {
             _context.Users.Add(user);

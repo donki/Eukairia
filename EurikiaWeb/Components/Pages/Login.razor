@@ -7,6 +7,12 @@
 @inject ISnackbar Snackbar
 @inject UsersService UsersService
 
+@inject ProtectedSessionStorage SessionStorage
+
+<MyMudThemeProvider />
+<MudSnackbarProvider />
+
+
 <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
     <MudPaper Class="pa-4" Elevation="1" Square="true" MinWidth="600px" Style="margin: auto;">
         <img src="images/Eukairia.webp" alt="Logo" style="max-width: 150px; margin-bottom: 20px;" />
@@ -23,12 +29,19 @@
     private string username;
     private string password;
 
-    private void DoLogin()
+    private async Task DoLogin()
     {
         var validated = UsersService.ValidateUser(username, password);
         if (validated)
         {
             NavigationManager.NavigateTo("/home");
+            var expiration = DateTime.Now.AddSeconds(5);
+            var user = UsersService.GetUserByEmail(username);
+            await SessionStorage.SetAsync("sessionExpiration", expiration);
+            await SessionStorage.SetAsync("isAuthenticated", true);
+            await SessionStorage.SetAsync("sessionData", username);
+            await SessionStorage.SetAsync("UserId", user.UserId);
+
         }
         else
         {

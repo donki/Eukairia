@@ -1,5 +1,7 @@
-﻿@using EukairiaWeb.Components
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
+
+@inject ProtectedSessionStorage SessionStorage
+@inject NavigationManager NavigationManager
 
 <MyMudThemeProvider />
 <MudSnackbarProvider />
@@ -20,7 +22,7 @@
 
     </div>
 
-     <main>
+    <main>
         <div class="top-row px-4">
         </div>
 
@@ -35,3 +37,36 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+
+@code {
+
+    private Timer? _timer;
+    private int counter = 0;
+
+    private async Task CheckSession()
+    {
+        var expirationDateResult = await SessionStorage.GetAsync<DateTime>("sessionExpiration");
+        if (expirationDateResult.Success && expirationDateResult.Value < DateTime.Now)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+    }
+
+    public void Dispose()
+    {
+        _timer.Dispose();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var result = await SessionStorage.GetAsync<bool>("isAuthenticated");
+        if (!result.Success || !result.Value)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+        _timer = new Timer(async _ => await InvokeAsync(CheckSession), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+    }
+}
