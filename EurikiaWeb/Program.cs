@@ -22,8 +22,7 @@ namespace EukairiaWeb
 
             builder.Services.AddScoped<UsersService>();
             builder.Services.AddScoped<TimeTrackingService>();
-
-
+            builder.Services.AddScoped<WorkShiftService>();
 
 
             builder.Services.AddRazorComponents()
@@ -71,7 +70,7 @@ namespace EukairiaWeb
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var adminEmail = "admin@eurikia.com";
+            var adminEmail = "admin@eukairia.com";
             var adminUser = context.Users.ToList().Find(x => x.Email.Equals(adminEmail));
             if (adminUser == null)
             {

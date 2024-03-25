@@ -69,6 +69,12 @@ namespace EukairiaWeb.Migrations
                     b.Property<DateTime?>("EndTime")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("MinutesOutsideShift")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MinutesWithinShift")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("TEXT");
 
@@ -76,6 +82,8 @@ namespace EukairiaWeb.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("TimeTrackingId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("TimeTrackings");
                 });
@@ -106,6 +114,46 @@ namespace EukairiaWeb.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("EukairiaWeb.Data.Models.WorkShift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ActiveDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeSpan>("MaxEntryTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("MaxHoursPerDay")
+                        .HasColumnType("REAL");
+
+                    b.Property<TimeSpan>("MinExitTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WorkShifts");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -315,6 +363,17 @@ namespace EukairiaWeb.Migrations
                     b.ToTable("RolePermissions", (string)null);
                 });
 
+            modelBuilder.Entity("EukairiaWeb.Data.Models.TimeTracking", b =>
+                {
+                    b.HasOne("EukairiaWeb.Data.Models.User", "User")
+                        .WithMany("TimeTrackings")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EukairiaWeb.Data.Models.User", b =>
                 {
                     b.HasOne("EukairiaWeb.Data.Models.Role", "Role")
@@ -324,6 +383,17 @@ namespace EukairiaWeb.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("EukairiaWeb.Data.Models.WorkShift", b =>
+                {
+                    b.HasOne("EukairiaWeb.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -395,6 +465,11 @@ namespace EukairiaWeb.Migrations
             modelBuilder.Entity("EukairiaWeb.Data.Models.Role", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("EukairiaWeb.Data.Models.User", b =>
+                {
+                    b.Navigation("TimeTrackings");
                 });
 #pragma warning restore 612, 618
         }

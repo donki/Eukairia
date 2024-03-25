@@ -15,7 +15,7 @@
 
 <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
     <MudPaper Class="pa-4" Elevation="1" Square="true" MinWidth="600px" Style="margin: auto;">
-        <img src="images/Eukairia.webp" alt="Logo" style="max-width: 150px; margin-bottom: 20px;" />
+        <MudChip Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Secondary">Eurikia</MudChip>
         <MudText Typo="Typo.h5" GutterBottom="true">Iniciar sesión</MudText>
         <MudForm>
             <MudTextField @bind-Value="username" Label="Nombre de usuario" Variant="Variant.Filled" FullWidth="true" />
@@ -39,7 +39,8 @@
             var user = UsersService.GetUserByEmail(username);
             await SessionStorage.SetAsync("sessionExpiration", expiration);
             await SessionStorage.SetAsync("isAuthenticated", true);
-            await SessionStorage.SetAsync("sessionData", username);
+            await SessionStorage.SetAsync("Username", username);
+            await SessionStorage.SetAsync("Name", user.Name);
             await SessionStorage.SetAsync("UserId", user.UserId);
 
         }

@@ -1,0 +1,98 @@
+﻿@inherits MudDialog
+@using EukairiaWeb.Data.Models
+@rendermode InteractiveServer
+
+@inject WorkShiftService WorkShiftService
+@inject UsersService UsersService
+
+@inject IDialogService DialogService
+
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="WorkShift">
+            <MudSelect T="Guid" Label="Seleccione un usuario" @bind-Value="WorkShift.UserId">
+                @foreach (var user in Users)
+                {
+                    <MudSelectItem Value="@user.UserId" Text="@user.Name" />
+                }
+            </MudSelect>
+            <MudTimePicker Label="Inicio del Turno" @bind-Time="WorkShift.StartTime" />
+            <MudTimePicker Label="Fin del Turno" @bind-Time="WorkShift.EndTime" />
+
+            <MudText Typo="Typo.body1" GutterBottom="true">Días Activos:</MudText>
+            @foreach (var day in Enum.GetValues<DaysOfWeek>())
+            {
+                if (day == DaysOfWeek.Ninguno) continue; // Ignorar 'None'
+                <MudCheckBox Checked="@WorkShift.ActiveDays.HasFlag(day)"
+                             Changed="@((bool value) => SetDayActive(day, value))">@day.ToString()</MudCheckBox>
+            }
+
+            <MudDatePicker Label="Fecha de Inicio" @bind-Date="WorkShift.StartDate" />
+            <MudDatePicker Label="Fecha de Fin (opcional)" @bind-Date="WorkShift.EndDate" />
+
+            <MudTimePicker Label="Hora Máxima de Entrada" @bind-Time="WorkShift.MaxEntryTime" />
+            <MudTimePicker Label="Hora Mínima de Salida" @bind-Time="WorkShift.MinExitTime" />
+
+            <MudTextField Label="Horas Máximas por Día" @bind-Value="WorkShift.MaxHoursPerDayString" InputType="InputType.Number" />
+
+
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="@Save">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    public List<User> Users { get; set; } = new List<User>();
+
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public EventCallback<WorkShift> OnSave { get; set; }
+    [Parameter] public WorkShift WorkShift { get; set; }
+
+    void Cancel() => MudDialog.Cancel();
+
+    async Task Save()
+    {
+        await OnSave.InvokeAsync(WorkShift);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (WorkShift == null)
+        {
+            WorkShift = new WorkShift();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Users = await UsersService.GetUsersAsync();
+
+    }
+
+    private bool GetDayActive(DaysOfWeek day)
+    {
+        return WorkShift.ActiveDays.HasFlag(day);
+    }
+
+    private void SetDayActive(DaysOfWeek day, bool isChecked)
+    {
+        if (isChecked)
+        {
+            WorkShift.ActiveDays |= day; // Añadir el día seleccionado.
+        }
+        else
+        {
+            WorkShift.ActiveDays &= ~day; // Remover el día deseleccionado.
+        }
+        InvokeAsync(StateHasChanged);
+    }
+    
+
+}

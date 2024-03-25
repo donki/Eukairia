@@ -1,0 +1,100 @@
+﻿@page "/workshifts"
+@rendermode InteractiveServer
+@using EukairiaWeb.Data.Models
+@using EukairiaWeb.Services
+
+@inject IDialogService DialogService
+@inject WorkShiftService WorkShiftService
+
+<MyMudProviders />
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => OpenDialog())">Agregar Turno</MudButton>
+<MudTable Items="@workShifts">
+    <HeaderContent>
+        <MudTh>Usuario</MudTh>
+        <MudTh>Inicio del Turno</MudTh>
+        <MudTh>Fin del Turno</MudTh>
+        <MudTh>Días Activos</MudTh>
+        <MudTh>Fecha de Inicio</MudTh>
+        <MudTh>Fecha de Fin</MudTh>
+        <MudTh>Hora Máxima de Entrada</MudTh>
+        <MudTh>Hora Mínima de Salida</MudTh>
+        <MudTh>Horas Máximas por Día</MudTh>
+        <MudTh>Acciones</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Usuario">@context.User.Name</MudTd>
+            <MudTd DataLabel="Inicio del Turno">@context.StartTime?.ToString(@"hh\:mm")</MudTd>
+            <MudTd DataLabel="Fin del Turno">@context.EndTime?.ToString(@"hh\:mm")</MudTd>
+            <MudTd DataLabel="Días Activos">@GetActiveDaysString(context.ActiveDays)</MudTd>
+            <MudTd DataLabel="Fecha de Inicio">@context.StartDate?.ToShortDateString()</MudTd>
+            <MudTd DataLabel="Fecha de Fin">@context.EndDate?.ToShortDateString()</MudTd>
+            <MudTd DataLabel="Hora Máxima de Entrada">@context.MaxEntryTime?.ToString(@"hh\:mm")</MudTd>
+            <MudTd DataLabel="Hora Mínima de Salida">@context.MinExitTime?.ToString(@"hh\:mm")</MudTd>
+            <MudTd DataLabel="Horas Máximas por Día">@context.MaxHoursPerDay</MudTd>
+            <MudTd DataLabel="Acciones">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteWorkShift(context.Id))" Color="Color.Error" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+
+
+
+
+@code {
+    private List<WorkShift> workShifts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        workShifts = await WorkShiftService.GetAllWorkShiftsAsync();
+    }
+
+    private async Task OpenDialog(WorkShift WorkShift = null)
+    {
+        var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = true,
+                Position = DialogPosition.TopCenter
+            };
+        var parameters = new DialogParameters();
+        if (WorkShift != null) parameters.Add("WorkShift", WorkShift);
+        var dialog = DialogService.Show<WorkShiftDialog>( "Turno de Trabajo", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            workShifts = await WorkShiftService.GetAllWorkShiftsAsync();
+            StateHasChanged(); 
+        }
+    }
+
+    async Task DeleteWorkShift(Guid workShiftId)
+    {
+        await WorkShiftService.DeleteWorkShiftAsync(workShiftId);
+        workShifts = await WorkShiftService.GetAllWorkShiftsAsync(); 
+    }
+
+    private string GetActiveDaysString(DaysOfWeek activeDays)
+    {
+        if (activeDays == DaysOfWeek.Ninguno)
+        {
+            return "Ninguno";
+        }
+
+        var activeDaysList = new List<string>();
+        foreach (DaysOfWeek day in Enum.GetValues(typeof(DaysOfWeek)))
+        {
+            if (day != DaysOfWeek.Ninguno && activeDays.HasFlag(day))
+            {
+                activeDaysList.Add(day.ToString());
+            }
+        }
+
+        return string.Join(", ", activeDaysList);
+    }
+
+}
