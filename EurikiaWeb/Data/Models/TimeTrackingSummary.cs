@@ -1,4 +1,4 @@
-﻿namespace EukairiaWeb.Services
+﻿namespace EukairiaWeb.Data.Models
 {
     public class TimeTrackingSummary
     {

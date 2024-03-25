@@ -4,10 +4,14 @@
 
 @rendermode InteractiveServer
 @inject ProtectedSessionStorage SessionStorage
+@inject ISnackbar Snackbar
+@inject TimeTrackingService TimeTrackingService
+@inject WorkShiftService WorkShiftService;
+
+<MudSnackbarProvider />
 
 <PageTitle>Home</PageTitle>
 
-@inject TimeTrackingService TimeTrackingService
 
 
 <MudContainer Class="mt-16 px-8" MaxWidth="MaxWidth.False">
@@ -23,12 +27,14 @@
                             <HeaderContent>
                                 <MudTh>Inicio</MudTh>
                                 <MudTh>Final</MudTh>
-                                <MudTh>Minutos</MudTh>
+                                <MudTh>Minutos dentro del turno</MudTh>
+                                <MudTh>Minutos fuera del turno</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                     <MudTd DataLabel="Start Time">@context.StartTime.ToString("HH:mm")</MudTd>
                                     <MudTd DataLabel="End Time">@context.EndTime?.ToString("HH:mm")</MudTd>
-                                    <MudTd DataLabel="End Time">@context.Minutes</MudTd>
+                                    <MudTd DataLabel="End Time">@context.MinutesWithinShift</MudTd>
+                                    <MudTd DataLabel="End Time">@context.MinutesOutsideShift</MudTd>
                             </RowTemplate>
                         </MudTable>
                     </MudPaper>
@@ -65,15 +71,24 @@
         }
         tracks = await TimeTrackingService.GetTodaysTracksAsync();
         Summary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
+        StateHasChanged();
     }
 
     private async Task TrackTime()
     {
         if (!UserId.Equals(Guid.Empty))
         {
-            await TimeTrackingService.TrackTimeAsync(UserId);
-            tracks = await TimeTrackingService.GetTodaysTracksAsync();
-            Summary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
+            if(await WorkShiftService.CanRegisterTime(UserId,DateTime.Now))
+            {
+                await TimeTrackingService.TryTrackTimeAsync(UserId, DateTime.Now, DateTime.Now);
+                tracks = await TimeTrackingService.GetTodaysTracksAsync();
+                Summary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
+                StateHasChanged();
+
+            } else
+            {
+                Snackbar.Add("El usuario no tiene turnos.", Severity.Error);
+            }
         }
     }
 }

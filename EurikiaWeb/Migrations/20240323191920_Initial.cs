@@ -228,6 +228,55 @@ namespace EukairiaWeb.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "TimeTrackings",
+                columns: table => new
+                {
+                    TimeTrackingId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Day = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    StartTime = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    EndTime = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    MinutesWithinShift = table.Column<int>(type: "INTEGER", nullable: false),
+                    MinutesOutsideShift = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TimeTrackings", x => x.TimeTrackingId);
+                    table.ForeignKey(
+                        name: "FK_TimeTrackings_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkShifts",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StartTime = table.Column<TimeSpan>(type: "TEXT", nullable: false),
+                    EndTime = table.Column<TimeSpan>(type: "TEXT", nullable: false),
+                    MaxEntryTime = table.Column<TimeSpan>(type: "TEXT", nullable: false),
+                    MinExitTime = table.Column<TimeSpan>(type: "TEXT", nullable: false),
+                    MaxHoursPerDay = table.Column<double>(type: "REAL", nullable: false),
+                    ActiveDays = table.Column<int>(type: "INTEGER", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkShifts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkShifts_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -271,9 +320,19 @@ namespace EukairiaWeb.Migrations
                 column: "RolesRoleId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TimeTrackings_UserId",
+                table: "TimeTrackings",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_RoleId",
                 table: "Users",
                 column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkShifts_UserId",
+                table: "WorkShifts",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -298,7 +357,10 @@ namespace EukairiaWeb.Migrations
                 name: "RolePermissions");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "TimeTrackings");
+
+            migrationBuilder.DropTable(
+                name: "WorkShifts");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -308,6 +370,9 @@ namespace EukairiaWeb.Migrations
 
             migrationBuilder.DropTable(
                 name: "Permissions");
+
+            migrationBuilder.DropTable(
+                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Roles");

@@ -15,6 +15,8 @@ namespace EukairiaWeb.Data
 
         public DbSet<TimeTracking> TimeTrackings { get; set; }
 
+        public DbSet<WorkShift> WorkShifts { get; set; }
+
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=Eukairia.db");
@@ -29,9 +31,14 @@ namespace EukairiaWeb.Data
                 .UsingEntity(j => j.ToTable("RolePermissions"));
 
             modelBuilder.Entity<User>()
-                .HasOne(u => u.Role) 
+                .HasOne(u => u.Role)
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.RoleId);
+
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.TimeTrackings)
+                .WithOne(t => t.User)
+                .HasForeignKey(t => t.UserId);
         }
 
     }

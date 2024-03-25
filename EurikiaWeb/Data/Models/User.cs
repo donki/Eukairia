@@ -18,6 +18,8 @@ namespace EukairiaWeb.Data.Models
         public Guid RoleId { get; set; }
         public Role Role { get; set; }
 
+        public List<TimeTracking> TimeTrackings { get; set; }
+
     }
 
 }

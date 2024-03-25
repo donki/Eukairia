@@ -17,23 +17,12 @@
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
 
-        public int Minutes
-        {
-            get
-            {
-                // Si EndTime tiene valor, calcula la diferencia con StartTime
-                if (EndTime != null)
-                {
-                    // Calcula la diferencia en minutos y retorna el valor
-                    return (int)((EndTime.Value - StartTime).TotalMinutes);
-                }
-                else
-                {
-                    // Si no hay EndTime, podría retornar 0 o cualquier otro valor que indique "indefinido"
-                    return 0;
-                }
-            }
-        }
+        [ForeignKey("UserId")]
+        public User User { get; set; }
+
+        public int MinutesWithinShift { get; set; }
+
+        public int MinutesOutsideShift { get; set; }
     }
 
 }

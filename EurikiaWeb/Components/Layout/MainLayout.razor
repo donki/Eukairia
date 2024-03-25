@@ -7,30 +7,32 @@
 <MudSnackbarProvider />
 
 <div class="page mud-layout">
-
     <div class="sidebar mud-elevation-1">
-        <div class="top-row mud-drawer-head">
+        <div class="top-row mud-drawer-head d-flex justify-content-between">
             <div>
-                <a class="navbar-brand" target="_blank">Eurikia</a>
+                <MudChip Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Secondary">Eurikia</MudChip>
+            </div>
+            <div class="user-name">
+                <!-- Asume que tienes una manera de obtener el nombre del usuario, por ejemplo, @UserName -->
+                <MudText>@UserName</MudText>
+                </div>
+            </div>
+
+            <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+                <NavMenu />
             </div>
         </div>
 
-        <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-        <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-            <NavMenu />
-        </div>
+        <main>
+            <div class="top-row px-4">
+            </div>
 
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-        </div>
-
-        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="my-2 pt-2">
-            @Body
+            <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="my-2 pt-2">
+                @Body
         </MudContainer>
     </main>
 </div>
+
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
@@ -43,6 +45,7 @@
 
     private Timer? _timer;
     private int counter = 0;
+    private string UserName;
 
     private async Task CheckSession()
     {
@@ -62,9 +65,11 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         var result = await SessionStorage.GetAsync<bool>("isAuthenticated");
+        var UserName = await SessionStorage.GetAsync<string>("Name");
         if (!result.Success || !result.Value)
         {
             NavigationManager.NavigateTo("/");
+
         }
 
         _timer = new Timer(async _ => await InvokeAsync(CheckSession), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));

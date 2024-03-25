@@ -17,54 +17,38 @@
             _context = context;
         }
 
-        public async Task TrackTimeAsync(Guid userId)
+        public async Task<bool> TryTrackTimeAsync(Guid userId, DateTime startTime, DateTime endTime)
         {
-            var today = DateTime.Today;
-            var now = DateTime.Now; // Captura la hora actual solo una vez para mantener consistencia
-            now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0);
+            var workShifts = await _context.WorkShifts
+                .Where(ws => ws.UserId == userId &&
+                             ws.StartDate <= startTime &&
+                             (ws.EndDate == null || ws.EndDate >= startTime))
+                .ToListAsync();
 
-            // Intenta encontrar un registro para el día actual, sin importar si tiene o no hora de finalización
-            var existingTrack = await _context.TimeTrackings
-                .Where(t => t.UserId == userId && t.Day == today)
-                .OrderByDescending(t => t.StartTime)
-                .FirstOrDefaultAsync();
+            var applicableShift = workShifts.FirstOrDefault(ws =>
+                ws.ActiveDays.HasFlag((DaysOfWeek)(1 << (int)startTime.DayOfWeek)) &&
+                ws.StartTime <= startTime.TimeOfDay &&
+                (endTime == null || ws.EndTime >= endTime.TimeOfDay));
 
-            if (existingTrack != null)
+            if (applicableShift == null)
             {
-                // Si el registro existente ya tiene una hora de finalización, o si no la tiene...
-                if (existingTrack.EndTime.HasValue)
-                {
-                    // ...y ya tiene EndTime, crea un nuevo registro, ya que el anterior ya fue cerrado
-                    var newTrack = new TimeTracking
-                    {
-                        UserId = userId,
-                        Day = today,
-                        StartTime = now,
-                        // EndTime se deja como null, indicando que este registro está abierto
-                    };
-                    _context.TimeTrackings.Add(newTrack);
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    // Si no tiene EndTime, actualiza el registro existente para cerrarlo
-                    existingTrack.EndTime = now;
-                    await _context.SaveChangesAsync();
-                }
+                // No se encontró un turno aplicable. No se permite registrar el tiempo.
+                return false;
             }
-            else
+
+            var newTrack = new TimeTracking
             {
-                // Si no existe ningún registro para el día actual, crea uno nuevo
-                var newTrack = new TimeTracking
-                {
-                    UserId = userId,
-                    Day = today,
-                    StartTime = now,
-                    // EndTime se deja como null, indicando que este registro está abierto
-                };
-                _context.TimeTrackings.Add(newTrack);
-                await _context.SaveChangesAsync();
-            }
+                UserId = userId,
+                Day = startTime.Date,
+                StartTime = startTime,
+                EndTime = endTime,
+                // Aquí podrías añadir más lógica para determinar si el tiempo está dentro o fuera del turno
+                // y ajustar la entidad TimeTracking según sea necesario.
+            };
+
+            _context.TimeTrackings.Add(newTrack);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<List<TimeTracking>> GetTodaysTracksAsync()
@@ -108,7 +92,7 @@
         private async Task<TimeSpan> GetTimeTrackedForPeriod(Guid userId, DateTime start, DateTime end)
         {
             var tracks = await _context.TimeTrackings
-                .Where(t => t.UserId == userId && t.Day >= start && t.EndTime!=null && t.Day <= end && t.EndTime.HasValue)
+                .Where(t => t.UserId == userId && t.Day >= start && t.Day <= end && t.EndTime.HasValue)
                 .ToListAsync();
 
             return tracks.Aggregate(TimeSpan.Zero, (total, next) => total.Add(next.EndTime.Value - next.StartTime));
@@ -131,6 +115,35 @@
         {
             // Formatea la duración como HH:mm. Ajusta según tus necesidades.
             return $"{(int)timeSpan.TotalHours:00}:{timeSpan.Minutes:00}";
+        }
+
+        public async Task<(int minutesWithinShift, int minutesOutsideShift)> CalculateTime(Guid userId, DateTime StarTime, DateTime EndTime)
+        {
+            var workShifts = await _context.WorkShifts.Where(ws => ws.UserId == userId).ToListAsync();
+            int minutesWithinShift = 0;
+            int minutesOutsideShift = 0;
+
+            if (EndTime == null)
+            {
+                return (minutesWithinShift, minutesOutsideShift);
+            }
+
+            var shift = workShifts.FirstOrDefault(ws => ws.StartTime <= StarTime.TimeOfDay && ws.EndTime >= (EndTime).TimeOfDay);
+
+            if (shift != null)
+            {
+                minutesWithinShift += (int)((TimeSpan)(StarTime - EndTime)).TotalMinutes;
+
+            }
+            else
+            {
+                minutesOutsideShift += (int)((TimeSpan)(StarTime - EndTime)).TotalMinutes;
+
+
+            }
+
+
+            return (minutesWithinShift, minutesOutsideShift);
         }
 
 
