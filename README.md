@@ -20,6 +20,9 @@
 
 To start using Eurikia, clone this repository and follow the setup instructions. Eurikia is easy to configure and customize, offering a robust solution for time and human resources
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
 
@@ -55,3 +58,6 @@ Para comenzar a utilizar Eurikia, clona este repositorio y sigue las instruccion
 ¡Tu contribución es bienvenida! Si tienes ideas para mejorar Eurikia o has encontrado un bug, no dudes en abrir un issue o enviar un pull request.
 
 
+## Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT - vea el archivo [LICENSE](LICENSE) para más detalles.
