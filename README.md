@@ -22,7 +22,7 @@ To start using Eurikia, clone this repository and follow the setup instructions.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+This project is licensed under the MIT License - see the [LICENSE](License.txt) file for details.
 
 
 
@@ -60,4 +60,4 @@ Para comenzar a utilizar Eurikia, clona este repositorio y sigue las instruccion
 
 ## Licencia
 
-Este proyecto está licenciado bajo la Licencia MIT - vea el archivo [LICENSE](LICENSE.txt) para más detalles.
+Este proyecto está licenciado bajo la Licencia MIT - vea el archivo [LICENSE](License.txt) para más detalles.
