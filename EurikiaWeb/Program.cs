@@ -5,6 +5,7 @@ using EukairiaWeb.Helpers;
 using EukairiaWeb.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 using MudBlazor.Services;
 using static System.Formats.Asn1.AsnWriter;
@@ -23,6 +24,7 @@ namespace EukairiaWeb
             builder.Services.AddScoped<UsersService>();
             builder.Services.AddScoped<TimeTrackingService>();
             builder.Services.AddScoped<WorkShiftService>();
+            builder.Services.AddScoped<RolesService>();            
 
 
             builder.Services.AddRazorComponents()
@@ -40,12 +42,12 @@ namespace EukairiaWeb
                 config.SnackbarConfiguration.ShowTransitionDuration = 500;
             });
 
-            var app = builder.Build();
 
+            var app = builder.Build();
+            app.UseStatusCodePagesWithRedirects("/error");
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
-                app.UseExceptionHandler("/Error");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
@@ -107,14 +109,14 @@ namespace EukairiaWeb
 
         public static async Task EnsureUserRoleAndPermissions(IServiceProvider serviceProvider)
         {
-            var adminRoleName = "Usuario";
+            var RoleName = "Usuario";
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var rolAdminUser = context.Roles.ToList().Find(x => x.RoleName.Equals(adminRoleName));
+            var rolAdminUser = context.Roles.ToList().Find(x => x.RoleName.Equals(RoleName));
             if (rolAdminUser == null)
             {
 
-                rolAdminUser = new Role { RoleName = adminRoleName };
+                rolAdminUser = new Role { RoleName = RoleName };
                 context.Roles.Add(rolAdminUser);
             }
 
@@ -127,6 +129,7 @@ namespace EukairiaWeb
             await context.SaveChangesAsync();
 
         }
+
 
     }
 

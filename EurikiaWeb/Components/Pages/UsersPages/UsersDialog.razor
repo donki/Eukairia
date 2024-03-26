@@ -1,62 +1,101 @@
 ﻿@inherits MudDialog
 @using EukairiaWeb.Data.Models
 @using EukairiaWeb.Services
+@using EukairiaWeb.Helpers
 @inject UsersService UserService
-@inject ISnackbar Snackbar
+@inject RolesService RolesService
 
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
-
         <MudForm>
             <MudTextField Label="Correo electrónico" @bind-Value="User.Email" FullWidth Variant="Variant.Filled" />
              <MudTextField Label="Nombre" @bind-Value="@User.Name" FullWidth />
              <MudTextField Label="Contraseña" @bind-Value="@password" InputType="InputType.Password" FullWidth />
              <MudTextField Label="Confirmar contraseña" @bind-Value="@confirmPassword" InputType="InputType.Password" FullWidth />
-         </MudForm>
-     </DialogContent>
-     <DialogActions>
-         <MudButton OnClick="Cancel">Cancelar</MudButton>
-         <MudButton OnClick="Save" Color="Color.Primary" Disabled="@(password != confirmPassword && !string.IsNullOrEmpty(password))">Guardar</MudButton>
-     </DialogActions>
- </MudDialog>
 
- @code {
+             <!-- Selector de Rol -->
+             <MudSelect Label="Rol" @bind-Value="User.RoleId" FullWidth>
+                @foreach (var role in roles)
+                {
+                    <MudSelectItem T="Guid" Value="@role.RoleId">@role.RoleName</MudSelectItem>
+                }
+            </MudSelect>
+
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Save" Color="Color.Primary" Disabled="@(password != confirmPassword && !string.IsNullOrEmpty(password))">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
 
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 
     [Parameter] public User User { get; set; }
-    [Parameter] public EventCallback<User> OnSave { get; set; }
 
     private string password = string.Empty;
     private string confirmPassword = string.Empty;
+    private List<Role> roles;
 
     private async Task Save()
     {
-        if (!string.IsNullOrEmpty(password))
+        bool isNewUser = User.UserId == Guid.Empty;
+
+        if (isNewUser || !string.IsNullOrEmpty(password))
         {
-            if (password == confirmPassword)
+            if (!string.IsNullOrEmpty(password))
             {
-                User.Password = BCrypt.Net.BCrypt.HashPassword(password);
+                if (password != confirmPassword)
+                {
+                    Snackbar.Add("Las contraseñas no coinciden", Severity.Error);
+                    return; 
+                }
+                User.Password = SecurityHelper.HashValue(password);
+            }
+
+            if (isNewUser)
+            {
+                await UserService.AddUserAsync(User);
+                Snackbar.Add("Usuario creado", Severity.Success);
             }
             else
             {
-                Snackbar.Add("Las contraseñas no coinciden", Severity.Error);
+                await UserService.UpdateUserAsync(User);
+                Snackbar.Add("Usuario actualizado", Severity.Success);
             }
-            await OnSave.InvokeAsync(User);
-            MudDialog.Close(DialogResult.Ok(User));
 
+            MudDialog.Close(DialogResult.Ok(User));
         }
         else
         {
-            Snackbar.Add("La contraseña no puede estar vacía", Severity.Error);
+            // Si es actualización de usuario y no se cambia la contraseña, sigue adelante con otros campos
+            if (!isNewUser)
+            {
+                await UserService.UpdateUserAsync(User);
+                Snackbar.Add("Usuario Actualizado", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(User));
+            }
+            else
+            {
+                // En caso de nuevo usuario y contraseña vacía, mostrar error
+                Snackbar.Add("La contraseña no puede estar vacía", Severity.Error);
+            }
         }
-
     }
+
 
     private void Cancel()
     {
         MudDialog.Close(DialogResult.Cancel());
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        roles = await RolesService.GetRolesAsync(); // Asume que este método obtiene los roles disponibles
     }
 }
 

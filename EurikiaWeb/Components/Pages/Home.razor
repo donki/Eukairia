@@ -4,9 +4,11 @@
 
 @rendermode InteractiveServer
 @inject ProtectedSessionStorage SessionStorage
+@inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 @inject TimeTrackingService TimeTrackingService
 @inject WorkShiftService WorkShiftService;
+@inject UsersService UsersService
 
 <MudSnackbarProvider />
 
@@ -58,6 +60,7 @@
 
 
     @code {
+
     private Guid UserId = Guid.Empty;
     private List<TimeTracking> tracks = new();
     private TimeTrackingSummary Summary;
@@ -71,6 +74,30 @@
         }
         tracks = await TimeTrackingService.GetTodaysTracksAsync();
         Summary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
+
+        try
+        {
+            var result2 = await SessionStorage.GetAsync<bool>("isAuthenticated");
+            if (!result2.Success || !result2.Value)
+            {
+                NavigationManager.NavigateTo("/");
+
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Error al obtener isAuthenticated: {ex.Message}");
+            // Considera manejar el error de manera adecuada aquí
+        }
+
+        var result3 = await SessionStorage.GetAsync<string>("Name");
+
+        if (result3.Success)
+        {
+
+            UsersService.UserName = result3.Value;
+
+        }
         StateHasChanged();
     }
 
@@ -91,4 +118,6 @@
             }
         }
     }
+
+
 }

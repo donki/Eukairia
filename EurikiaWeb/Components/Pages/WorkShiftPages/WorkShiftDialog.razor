@@ -21,11 +21,13 @@
             <MudTimePicker Label="Fin del Turno" @bind-Time="WorkShift.EndTime" />
 
             <MudText Typo="Typo.body1" GutterBottom="true">Días Activos:</MudText>
+            if (@WorkShift != null) {
             @foreach (var day in Enum.GetValues<DaysOfWeek>())
             {
                 if (day == DaysOfWeek.Ninguno) continue; // Ignorar 'None'
                 <MudCheckBox Checked="@WorkShift.ActiveDays.HasFlag(day)"
                              Changed="@((bool value) => SetDayActive(day, value))">@day.ToString()</MudCheckBox>
+            }
             }
 
             <MudDatePicker Label="Fecha de Inicio" @bind-Date="WorkShift.StartDate" />
@@ -62,17 +64,14 @@
         MudDialog.Close(DialogResult.Ok(true));
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (WorkShift == null)
-        {
-            WorkShift = new WorkShift();
-        }
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Users = await UsersService.GetUsersAsync();
+        if (firstRender)
+        {
+            Users = await UsersService.GetUsersAsync();
+            StateHasChanged();
+        }
+
 
     }
 

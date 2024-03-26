@@ -60,6 +60,24 @@ namespace EukairiaWeb.Services
                 }
             }
         }
+
+        private string userName;
+        public string UserName
+        {
+            get => userName;
+            set
+            {
+                if (userName != value)
+                {
+                    userName = value;
+                    NotifyStateChanged();
+                }
+            }
+        }
+
+        public event Action OnChange;
+
+        private void NotifyStateChanged() => OnChange?.Invoke();
     }
 
 }
