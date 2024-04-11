@@ -1,0 +1,71 @@
+﻿@page "/calendar"
+
+@rendermode InteractiveServer
+@using EukairiaWeb.Data.Models;
+
+@inject LeaveRequestService LeaveRequestService;
+@inject ProtectedSessionStorage SessionStorage
+@using EukairiaWeb.Data.Models
+@using EukairiaWeb.Helpers
+@using EukairiaWeb.Services
+@using EukairiaWeb.Components
+
+<MyMudProviders />
+
+<PageTitle>Calendarios de permisos</PageTitle>
+
+<Scheduler TodayButtonText="Hoy" PlusOthersText="+ {n} más" StartDayOfWeek=DayOfWeek.Monday EnableDragging=false EnableAppointmentsCreationFromScheduler=false>
+    <Appointments>
+        @if(leaveRequests != null) {
+        @foreach (var leaveRequest in leaveRequests)
+        {
+            <Appointment Start="@leaveRequest.StartDateDt" End="@leaveRequest.EndDateDt" Color="@GetAppointmentColor(leaveRequest.IsPending)">
+                    @leaveRequest.Reason
+            </Appointment>
+        }
+        }
+    </Appointments>
+</Scheduler>
+
+
+@code {
+    private List<LeaveRequest> leaveRequests;
+
+    private string GetLeaveTypeName(LeaveType leaveType)
+    {
+        return leaveType switch
+        {
+            LeaveType.Paid => "Retribuido",
+            LeaveType.UnPaid => "No retribuido",
+            LeaveType.Vacation => "Vacaciones",
+            _ => "Desconocido"
+        };
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var UserId = await SessionStorage.GetAsync<Guid>("UserId");
+        if (UserId.Success)
+        {
+            leaveRequests = await LeaveRequestService.GetLeaveRequestsByUserAsync(UserId.Value);
+            StateHasChanged();
+        }
+
+
+    }
+
+
+
+    private string GetAppointmentColor(LeaveRequestStatus status)
+    {
+        switch (status)
+        {
+            case LeaveRequestStatus.Approved:
+                return "MediumSeaGreen";
+            case LeaveRequestStatus.Pending:
+                return "Orange"; 
+            default:
+                return "Tomato"; 
+        }
+    }
+
+}

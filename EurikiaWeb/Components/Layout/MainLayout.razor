@@ -1,38 +1,28 @@
 ﻿@inherits LayoutComponentBase
-
-@inject UsersService UsersService
-
-
-<MyMudThemeProvider />
-<MudSnackbarProvider />
+@using EukairiaWeb.Components.Themes;
+@inject ProtectedSessionStorage SessionStorage
 
 
-<div class="page mud-layout">
-    <div class="sidebar mud-elevation-1">
-        <div class="top-row mud-drawer-head d-flex justify-content-between">
-            <div>
-                <MudChip Label="true"  Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Secondary">Eurikia</MudChip>
-            </div>
-            <div class="user-name">
-                <MudChip Label="true" Icon="@Icons.Material.Filled.Person" Color="Color.Secondary">@UsersService.UserName</MudChip>
 
-                </div>
-            </div>
+<ProvidersAggregate></ProvidersAggregate>
 
-            <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-                <NavMenu />
-            </div>
-        </div>
-
-        <main>
-            <div class="top-row px-4">
-            </div>
-
-            <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="my-2 pt-2">
-                @Body
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudChip Label="true" Color="Color.Secondary" Icon="@Icons.Material.Filled.HourglassEmpty">Eukairia</MudChip>
+        <MudSpacer />
+        <MudChip Label="true" Color="Color.Secondary" Icon="@Icons.Material.Filled.Person" Edge="Edge.End">@UserName</MudChip>
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+            @Body
         </MudContainer>
-    </main>
-</div>
+    </MudMainContent>
+</MudLayout>
+
 
 
 <div id="blazor-error-ui">
@@ -43,16 +33,22 @@
 
 
 @code {
+    bool _drawerOpen = false;
+    string UserName = "";
 
-    protected override void OnInitialized()
+
+    public void DrawerToggle()
     {
-        base.OnInitialized();
-        UsersService.OnChange += StateHasChanged;
+        _drawerOpen = !_drawerOpen;
     }
 
-    public void Dispose()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        UsersService.OnChange -= StateHasChanged;
+        var username = await SessionStorage.GetAsync<string>("Username");
+        if (username.Success)
+        {
+            UserName = username.Value;
+            StateHasChanged();
+        }
     }
-
 }

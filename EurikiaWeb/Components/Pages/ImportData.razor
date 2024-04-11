@@ -1,0 +1,113 @@
+﻿@page "/import"
+@rendermode InteractiveServer
+@inject ISnackbar SnackBar;
+
+@using EukairiaWeb.Data.Models;
+
+@inject TimeTrackingService TimeTrackingService;
+
+<MyMudProviders />
+
+<PageTitle>Importar</PageTitle>
+
+<div style="display: flex; align-items: center; justify-content: center;">
+    <MudGrid>
+        <MudItem xs="4">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <MudIcon Icon="@Icons.Material.Filled.QuestionMark" class="ms-3 me-3" Style="font-size: 64px;" Color="Color.Warning" />
+                    <MudText Style="text-align: justify;" Typo="Typo.body1">Para importar datos, selecciona el fichero csv de los registros horarios que quieres importar y aprete el botón importar. Recuerda que el fichero sólo debe contener 3 columnas, el id del usuario, el inicio del registro horario y el final del registro horario</MudText>
+                </div>
+            </div>
+        </MudItem>
+        <MudItem xs="12">
+            <InputFile class="custom-file-input" OnChange="HandleFileUpload" MaxFileSize="10485760" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ProcessFile">Importar</MudButton>
+        </MudItem>
+        <MudItem xs="4">
+            <MudProgressLinear Color="Color.Success" Rounded="true" Striped="true" Size="Size.Large" Value="@progressValue" Min="0" Max="100">
+                <MudText Typo="Typo.subtitle1" Color="Color.Dark">
+                    <b>@progressValue%</b>
+                </MudText>
+            </MudProgressLinear>
+        </MudItem>
+    </MudGrid>
+</div>
+
+@code {
+    private MemoryStream memoryStream;
+    private int progressValue = 0;
+    private List<string> parsedData = new();
+
+
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        var maxAllowedSize = 10 * 1024 * 1024;
+        if ((file != null) && file.Size <= maxAllowedSize)
+        {
+            memoryStream = new MemoryStream();
+            await file.OpenReadStream(maxAllowedSize).CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+            progressValue = 0;
+        }
+        else
+        {
+            SnackBar.Add("El archivo excede el tamaño máximo permitido de 10 Mb.", Severity.Warning);
+        }
+    }
+
+    private async Task ProcessFile()
+    {
+        if (memoryStream == null)
+        {
+            SnackBar.Add("No se ha subido ningun fichero", Severity.Warning);
+            return;
+        }
+
+        SnackBar.Add("Procesando archivo...", Severity.Info);
+
+        using (var reader = new StreamReader(memoryStream))
+        {
+            while (!reader.EndOfStream)
+            {
+                var line = reader.ReadLine();
+                parsedData.Add(line);
+            }
+        }
+
+        SnackBar.Add("Importando datos...", Severity.Info);
+
+        var totalLines = parsedData.Count();
+        var i = 0;
+
+        foreach (string parsedline in parsedData)
+        {
+            var splitLine = parsedline.Split(";");
+            try
+            {
+                progressValue = Convert.ToInt16(((double)i / totalLines) * 100);
+                await Task.Yield();
+                await InvokeAsync(() => StateHasChanged());
+                i++;
+                var tmp = new TimeTracking
+                    {
+                        Day = DateTime.Parse(splitLine[0]),
+                        UserId = Guid.Parse(splitLine[1]),
+                        StartTime = DateTime.Parse(splitLine[2]),
+                        EndTime = DateTime.Parse(splitLine[3]),
+                    };
+
+                await TimeTrackingService.Save(tmp);
+                await TimeTrackingService.CalculateTimeTrackingAsync();
+
+            }
+            catch { }
+        }
+
+        SnackBar.Add($"Archivo importado exitosamente. Total líneas procesadas: {totalLines}", Severity.Success);
+
+    }
+}

@@ -20,9 +20,10 @@
         [ForeignKey("UserId")]
         public User User { get; set; }
 
-        public int MinutesWithinShift { get; set; }
+        public TimeSpan MinutesWithinShift { get; set; }
 
-        public int MinutesOutsideShift { get; set; }
+        public TimeSpan MinutesOutsideShift { get; set; }
+        public bool IsCalculated {  get; set; }
     }
 
 }

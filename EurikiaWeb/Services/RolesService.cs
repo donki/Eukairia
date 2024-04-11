@@ -1,6 +1,7 @@
 ﻿using EukairiaWeb.Data;
 using EukairiaWeb.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Graph.Solutions.VirtualEvents.Webinars.GetByUserIdAndRoleWithUserIdWithRole;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,9 +15,18 @@ namespace EukairiaWeb.Services
     {
         private readonly AppDbContext _context;
 
+        public static readonly string AdministratorRolName = "Administrador";
+        public static readonly string UserRolName = "Usuario";
+
         public RolesService(AppDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<Guid> GetByUserRoleId()
+        {
+            var res = await _context.Roles.FirstOrDefaultAsync(x => x.RoleName.Equals(UserRolName));
+            return res.RoleId;
         }
 
         public async Task<List<Role>> GetRolesAsync()

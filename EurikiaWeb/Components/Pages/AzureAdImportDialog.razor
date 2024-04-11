@@ -1,0 +1,51 @@
+﻿@inherits MudDialog
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Forms
+@using EukairiaWeb.Helpers
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        <MudForm>
+            <MudTextField Label="Tenant ID" UserAttributes=@InputAttributes @bind-Value="tenantId" FullWidth></MudTextField>
+            <MudTextField Label="Client ID" UserAttributes=@InputAttributes @bind-Value="clientId" FullWidth></MudTextField>
+             <MudTextField Label="Client Secret" UserAttributes=@InputAttributes @bind-Value="clientSecret" InputType="InputType.Password" FullWidth></MudTextField>
+         </MudForm>
+     </DialogContent>
+     <DialogActions>
+         <MudButton Color="Color.Primary" OnClick="Submit">Importar</MudButton>
+         <MudButton Color="Color.Secondary" OnClick="Cancel">Cancelar</MudButton>
+     </DialogActions>
+ </MudDialog>
+
+ @code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    private string clientId = "";
+    private string clientSecret = "";
+    private string tenantId = "";
+
+    public Dictionary<string, object> InputAttributes { get; set; } =
+    new Dictionary<string, object>()
+                {
+               { "autocomplete", "new-password" },
+                };
+
+    private void Submit()
+    {
+        if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret) && !string.IsNullOrWhiteSpace(tenantId))
+        {
+            // Cierra el diálogo y pasa los valores a quien lo invocó
+            MudDialog.Close(DialogResult.Ok(new AzureAdCredentials { TenantId = tenantId, ClientId = clientId, ClientSecret = clientSecret }));
+        }
+        else
+        {
+            DialogService.ShowMessageBox("Error", "El Tenant ID, el Client ID y el Client Secret son requeridos.", yesText: "Aceptar");
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+}

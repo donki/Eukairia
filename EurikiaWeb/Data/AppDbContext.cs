@@ -16,8 +16,7 @@ namespace EukairiaWeb.Data
         public DbSet<TimeTracking> TimeTrackings { get; set; }
 
         public DbSet<WorkShift> WorkShifts { get; set; }
-
-
+        public DbSet<LeaveRequest> LeaveRequests { get; internal set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=Eukairia.db");
 

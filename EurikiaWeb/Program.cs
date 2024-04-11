@@ -3,12 +3,12 @@ using EukairiaWeb.Data;
 using EukairiaWeb.Data.Models;
 using EukairiaWeb.Helpers;
 using EukairiaWeb.Services;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 using MudBlazor;
 using MudBlazor.Services;
-using static System.Formats.Asn1.AsnWriter;
+using Microsoft.AspNetCore.Components.WebAssembly.Server;
 
 namespace EukairiaWeb
 {
@@ -18,17 +18,35 @@ namespace EukairiaWeb
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+                .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
+                .EnableTokenAcquisitionToCallDownstreamApi()
+                .AddInMemoryTokenCaches();
+
+            builder.Services.AddControllersWithViews().AddMicrosoftIdentityUI();
+
             builder.Services.AddDbContext<AppDbContext>();
 
 
             builder.Services.AddScoped<UsersService>();
             builder.Services.AddScoped<TimeTrackingService>();
             builder.Services.AddScoped<WorkShiftService>();
-            builder.Services.AddScoped<RolesService>();            
+            builder.Services.AddScoped<RolesService>();
+            builder.Services.AddScoped<LeaveRequestService>();
+            builder.Services.AddScoped<GlobalService>();
+            
+
+            builder.WebHost.ConfigureKestrel(serverOptions =>
+            {
+                serverOptions.Limits.MaxRequestBodySize = 10 * 1024 * 1024;
+            });
 
 
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
+                //.AddInteractiveWebAssemblyComponents();
+
+            builder.Services.AddMudMarkdownServices();
 
             builder.Services.AddMudServices(config =>
             {
@@ -44,21 +62,26 @@ namespace EukairiaWeb
 
 
             var app = builder.Build();
+
+
+            app.UseAuthentication();
+            app.UseAntiforgery();
+            app.UseAuthorization();
             app.UseStatusCodePagesWithRedirects("/error");
-            // Configure the HTTP request pipeline.
+
             if (!app.Environment.IsDevelopment())
             {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
 
             app.UseStaticFiles();
-            app.UseAntiforgery();
+            app.MapControllers();
 
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
+                //.AddInteractiveWebAssemblyRenderMode();
 
             await EnsureAdminRoleAndPermissions(app.Services);
             await EnsureUserRoleAndPermissions(app.Services);
@@ -76,7 +99,7 @@ namespace EukairiaWeb
             var adminUser = context.Users.ToList().Find(x => x.Email.Equals(adminEmail));
             if (adminUser == null)
             {
-                var rolAdminUser = context.Roles.ToList().Find(x => x.RoleName.Equals("Administrador")); 
+                var rolAdminUser = context.Roles.ToList().Find(x => x.RoleName.Equals(RolesService.AdministratorRolName)); 
                 adminUser = new User { Name = adminEmail, Email = adminEmail, Role = rolAdminUser };
                 adminUser.Password = SecurityHelper.HashValue("AdministradorOC2024&");
                 context.Users.Add(adminUser);
@@ -86,7 +109,7 @@ namespace EukairiaWeb
 
         public static async Task EnsureAdminRoleAndPermissions(IServiceProvider serviceProvider)
         {
-            var adminRoleName = "Administrador";
+            var adminRoleName = RolesService.AdministratorRolName;
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var rolAdminUser = context.Roles.ToList().Find(x => x.RoleName.Equals(adminRoleName));
@@ -109,22 +132,22 @@ namespace EukairiaWeb
 
         public static async Task EnsureUserRoleAndPermissions(IServiceProvider serviceProvider)
         {
-            var RoleName = "Usuario";
+            var RoleName = RolesService.UserRolName;
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var rolAdminUser = context.Roles.ToList().Find(x => x.RoleName.Equals(RoleName));
-            if (rolAdminUser == null)
+            var rolUser = context.Roles.ToList().Find(x => x.RoleName.Equals(RoleName));
+            if (rolUser == null)
             {
 
-                rolAdminUser = new Role { RoleName = RoleName };
-                context.Roles.Add(rolAdminUser);
+                rolUser = new Role { RoleName = RoleName };
+                context.Roles.Add(rolUser);
             }
 
             var permissions = new List<Permission>();
             permissions.Add(new Permission { Name = "Gestionar Usuarios", Description = "Permite crear, editar y eliminar usuarios", CanView = true, CanEdit = false });
             permissions.Add(new Permission { Name = "Gestionar Registro de Horas", Description = "Permite acceso total al registro de horas", CanView = true, CanEdit = false });
 
-            rolAdminUser.Permissions = permissions;
+            rolUser.Permissions = permissions;
 
             await context.SaveChangesAsync();
 

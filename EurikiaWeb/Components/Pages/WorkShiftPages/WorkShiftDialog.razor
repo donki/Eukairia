@@ -4,8 +4,8 @@
 
 @inject WorkShiftService WorkShiftService
 @inject UsersService UsersService
-
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 
 <MudDialog>
@@ -14,20 +14,18 @@
             <MudSelect T="Guid" Label="Seleccione un usuario" @bind-Value="WorkShift.UserId">
                 @foreach (var user in Users)
                 {
-                    <MudSelectItem Value="@user.UserId" Text="@user.Name" />
+                    <MudSelectItem Value="@user.UserId">@user.Name</MudSelectItem>
                 }
             </MudSelect>
             <MudTimePicker Label="Inicio del Turno" @bind-Time="WorkShift.StartTime" />
             <MudTimePicker Label="Fin del Turno" @bind-Time="WorkShift.EndTime" />
 
             <MudText Typo="Typo.body1" GutterBottom="true">Días Activos:</MudText>
-            if (@WorkShift != null) {
             @foreach (var day in Enum.GetValues<DaysOfWeek>())
             {
                 if (day == DaysOfWeek.Ninguno) continue; // Ignorar 'None'
-                <MudCheckBox Checked="@WorkShift.ActiveDays.HasFlag(day)"
-                             Changed="@((bool value) => SetDayActive(day, value))">@day.ToString()</MudCheckBox>
-            }
+                <MudCheckBox Checked="@GetDayActive(day)"
+                             ValueChanged="@((bool value) => SetDayActive(day, value))">@day.ToString()</MudCheckBox>
             }
 
             <MudDatePicker Label="Fecha de Inicio" @bind-Date="WorkShift.StartDate" />
@@ -36,7 +34,8 @@
             <MudTimePicker Label="Hora Máxima de Entrada" @bind-Time="WorkShift.MaxEntryTime" />
             <MudTimePicker Label="Hora Mínima de Salida" @bind-Time="WorkShift.MinExitTime" />
 
-            <MudTextField Label="Horas Máximas por Día" @bind-Value="WorkShift.MaxHoursPerDayString" InputType="InputType.Number" />
+            <MudTimePicker Label="Horas por Día" @bind-Time="WorkShift.HoursPerDay" />
+            <MudTimePicker Label="Horas Máximas por Día" @bind-Time="WorkShift.MaxHoursPerDay" />
 
 
         </MudForm>
@@ -60,8 +59,24 @@
 
     async Task Save()
     {
-        await OnSave.InvokeAsync(WorkShift);
-        MudDialog.Close(DialogResult.Ok(true));
+
+        bool isNewWorkShift = WorkShift.Id == Guid.Empty;
+
+
+        if (isNewWorkShift)
+        {
+            await WorkShiftService.AddWorkShiftAsync(WorkShift);
+            Snackbar.Add("Turno creado", Severity.Success);
+        }
+        else
+        {
+            await WorkShiftService.UpdateWorkShiftAsync(WorkShift);
+            Snackbar.Add("Turno actualizado", Severity.Success);
+        }
+
+        MudDialog.Close(DialogResult.Ok(WorkShift));
+
+
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -77,7 +92,14 @@
 
     private bool GetDayActive(DaysOfWeek day)
     {
-        return WorkShift.ActiveDays.HasFlag(day);
+        if (WorkShift!= null)
+        {
+            return WorkShift.ActiveDays.HasFlag(day);
+        } else
+        {
+            return false;
+        }
+
     }
 
     private void SetDayActive(DaysOfWeek day, bool isChecked)
@@ -92,6 +114,6 @@
         }
         InvokeAsync(StateHasChanged);
     }
-    
+
 
 }

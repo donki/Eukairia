@@ -1,0 +1,89 @@
+﻿@page "/manageleaverequest"
+@rendermode InteractiveServer
+@using EukairiaWeb.Data.Models
+@using EukairiaWeb.Services
+@inject LeaveRequestService LeaveRequestService
+@inject IDialogService DialogService
+@inject ProtectedSessionStorage SessionStorage
+
+<MyMudProviders />
+
+<MudTable Items="@leaveRequests">
+    <HeaderContent>
+        <MudTh>Usuario</MudTh>
+        <MudTh>Fecha Inicio</MudTh>
+        <MudTh>Fecha Fin</MudTh>
+        <MudTh>Tipo de Permiso</MudTh>
+        <MudTh>Razón</MudTh>
+        <MudTh>Estado</MudTh>
+        <MudTh>Acciones</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.User.Name</MudTd>
+        <MudTd>@context.StartDate?.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>@context.EndDate?.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>
+                @((@context.LeaveType switch
+            {
+                LeaveType.Paid => "Retribuido",
+                LeaveType.UnPaid => "No retribuido",
+                LeaveType.Vacation => "Vacaciones",
+                _ => context.LeaveType.ToString()
+            }))
+        </MudTd>
+            <MudTd>@context.Reason</MudTd>
+            <MudTd>
+                @((@context.IsPending switch
+            {
+                LeaveRequestStatus.Pending => "Pendiente",
+                LeaveRequestStatus.Approved => "Aceptada",
+                LeaveRequestStatus.Denied => "Denegada",
+                _ => context.IsPending.ToString()
+            }))
+        </MudTd>
+            <MudTd>
+            <MudIconButton Icon="@Icons.Material.Filled.Check" OnClick="@(() => AcceptLeaveRequest(context))" Color="Color.Success" />
+            <MudIconButton Icon="@Icons.Material.Filled.Cancel" OnClick="@(() => DeniedLeaveRequest(context))" Color="Color.Error" />
+        </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+@code {
+    private List<LeaveRequest> leaveRequests = new List<LeaveRequest>();
+
+    protected override async Task OnAfterRenderAsync(bool firstrender)
+    {
+        await LoadLeaveRequests();
+    }
+
+    private async Task LoadLeaveRequests()
+    {
+
+        leaveRequests = await LeaveRequestService.GetLeaveRequestsAsync();
+        StateHasChanged();
+    }
+
+    private async Task AcceptLeaveRequest(LeaveRequest leaveRequest)
+    {
+        bool? result = await DialogService.ShowMessageBox("Confirmación", $"¿Estás seguro de que quieres aceptar la solicitud?", yesText: "Aceptar", cancelText: "Cancelar");
+
+        if (result == true)
+        {
+            leaveRequest.IsPending = LeaveRequestStatus.Approved;
+            await LeaveRequestService.UpdateLeaveRequestAsync(leaveRequest);
+            LoadLeaveRequests();
+        }
+    }
+
+    private async Task DeniedLeaveRequest(LeaveRequest leaveRequest)
+    {
+        bool? result = await DialogService.ShowMessageBox("Confirmación", $"¿Estás seguro de que quieres denegar la solicitud?", yesText: "Denegar", cancelText: "Cancelar");
+
+        if (result == true)
+        {
+            leaveRequest.IsPending = LeaveRequestStatus.Denied;
+            await LeaveRequestService.UpdateLeaveRequestAsync(leaveRequest);
+            LoadLeaveRequests();
+        }
+    }
+}

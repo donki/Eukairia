@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @layout Layout.LoginLayout
 @using EukairiaWeb.Services
+@inject Microsoft.AspNetCore.Authentication.IAuthenticationService AuthenticationService
+@inject IHttpContextAccessor HttpContextAccessor
 
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
@@ -10,17 +12,17 @@
 @inject ProtectedSessionStorage SessionStorage
 
 <MyMudThemeProvider />
-<MudSnackbarProvider />
-
 
 <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
     <MudPaper Class="pa-4" Elevation="1" Square="true" MinWidth="600px" Style="margin: auto;">
         <MudChip Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Secondary">Eurikia</MudChip>
         <MudText Typo="Typo.h5" GutterBottom="true">Iniciar sesión</MudText>
         <MudForm>
-            <MudTextField @bind-Value="username" Label="Nombre de usuario" Variant="Variant.Filled" FullWidth="true" />
-            <MudTextField @bind-Value="password" Label="Contraseña" Variant="Variant.Filled" FullWidth="true" InputType="InputType.Password" Class="mt-4" />
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="DoLogin" FullWidth="true" Class="mt-4">Iniciar Sesión</MudButton>
+            <MudTextField @bind-Value="username"  Variant="Variant.Filled" FullWidth />
+             <MudTextField @bind-Value="password" Variant="Variant.Filled" FullWidth InputType="InputType.Password" />
+             <MudButton Color="Color.Primary" Variant="Variant.Filled" @onclick="DoLogin" FullWidth>Iniciar Sesión</MudButton>
+            <hr />
+            <MudButton Color="Color.Secondary" Variant="Variant.Filled" @onclick="LoginWithAzureAd" FullWidth>Iniciar Sesión con Azure AD</MudButton>
         </MudForm>
     </MudPaper>
 </div>
@@ -34,7 +36,6 @@
         var validated = UsersService.ValidateUser(username, password);
         if (validated)
         {
-            NavigationManager.NavigateTo("/home");
             var expiration = DateTime.Now.AddSeconds(5);
             var user = UsersService.GetUserByEmail(username);
             await SessionStorage.SetAsync("sessionExpiration", expiration);
@@ -43,10 +44,37 @@
             await SessionStorage.SetAsync("Name", user.Name);
             await SessionStorage.SetAsync("UserId", user.UserId);
 
+            NavigationManager.NavigateTo("/home");
         }
         else
         {
             Snackbar.Add("Credenciales no válidas", Severity.Error);
         }
     }
+
+    private void LoginWithAzureAd()
+    {
+        NavigationManager.NavigateTo("/authenticate", forceLoad: true);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var ADuser = HttpContextAccessor.HttpContext.User;
+        string userId = ADuser.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value;
+
+        if(ADuser.Identity.IsAuthenticated)
+        {
+            var user = UsersService.GetUserByEmail(ADuser.Identity.Name);
+            var expiration = DateTime.Now.AddSeconds(5);
+            await SessionStorage.SetAsync("sessionExpiration", expiration);
+            await SessionStorage.SetAsync("isAuthenticated", true);
+            await SessionStorage.SetAsync("Username", user.Name);
+            await SessionStorage.SetAsync("Name", user.Name);
+            await SessionStorage.SetAsync("UserId", user.UserId);
+
+            NavigationManager.NavigateTo("/home");
+        }
+    }
+
+
 }

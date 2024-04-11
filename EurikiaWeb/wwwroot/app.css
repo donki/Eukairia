@@ -26,3 +26,16 @@
     text-align: center;
     height: 100px; /* Ajusta la altura según necesites */
 }
+
+.loading-overlay {
+    display: flex;
+    justify-content: center; /* Centrado horizontal */
+    align-items: center; /* Centrado vertical */
+    height: 100vh; /* Ajusta la altura al 100% de la ventana gráfica */
+    width: 100vw; /* Ajusta la anchura al 100% de la ventana gráfica */
+    position: fixed; /* Posicionamiento fijo */
+    top: 0;
+    left: 0;
+    background-color: rgba(255, 255, 255, 0.7); /* Fondo ligeramente transparente */
+    z-index: 1000; /* Asegura que se muestre por encima de otros elementos */
+}

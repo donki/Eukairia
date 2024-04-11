@@ -1,61 +1,184 @@
-﻿@page "/weather"
+﻿@page "/timesummary"
+@using EukairiaWeb.Data.Models
+@using System.Linq
+@using EukairiaWeb.Helpers
 @rendermode InteractiveServer
+@inject TimeTrackingService TimeTrackingService
+@inject UsersService UsersService
+@inject WorkShiftService WorkShiftService;
+@inject ProtectedSessionStorage SessionStorage;
+@inject NavigationManager NavigationManager
 
 <MyMudProviders />
-
-<PageTitle>Weather</PageTitle>
-
-<MudText Typo="Typo.h3" GutterBottom="true">Weather forecast</MudText>
-<MudText Class="mb-8">This component demonstrates fetching data from the server.</MudText>
-
-@if (forecasts == null)
+@if (isLoading)
 {
-    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+    <div class="loading-overlay">
+        <p>Obteniendo datos, por favor espera...</p>
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    </div>
 }
 else
 {
-    <MudTable Items="forecasts" Hover="true" SortLabel="Sort By" Elevation="0">
-        <HeaderContent>
-            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<WeatherForecast, object>(x=>x.Date)">Date</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<WeatherForecast, object>(x=>x.TemperatureC)">Temp. (C)</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<WeatherForecast, object>(x=>x.TemperatureF)">Temp. (F)</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<WeatherForecast, object>(x=>x.Summary!)">Summary</MudTableSortLabel></MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="Date">@context.Date</MudTd>
-            <MudTd DataLabel="Temp. (C)">@context.TemperatureC</MudTd>
-            <MudTd DataLabel="Temp. (F)">@context.TemperatureF</MudTd>
-            <MudTd DataLabel="Summary">@context.Summary</MudTd>
-        </RowTemplate>
-        <PagerContent>
-            <MudTablePager PageSizeOptions="new int[]{50, 100}" />
-        </PagerContent>
-    </MudTable>
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center">
+                <MudText Typo="Typo.h5">Registros Horarios</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Filtros -->
+        <MudItem xs="12">
+            <MudSelect T="Guid" Label="Filtrar por Usuario" @bind-Value="selectedUserId">
+                @foreach (var user in users)
+                {
+                    <MudSelectItem Value="@user.UserId">@user.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12">
+            <MudDatePicker Label="Fecha de inicio" @bind-SelectedDate="startDate" PickerMode="MudDatePickerMode.datetime" DateFormat="dd-MM-yyyy" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudDatePicker Label="Fecha de fin" @bind-SelectedDate="endDate" PickerMode="MudDatePickerMode.datetime" DateFormat="dd-MM-yyyy" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ApplyFilters">Aplicar Filtros</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RecalcTime">Recalcular tiempo</MudButton>
+        </MudItem>
+
+        <MudItem xs="8">
+            <MudTable Items="@timeTrackings" Striped="true" Bordered="true" Dense="false" Hover="true" SortLabel="Sort By">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="@((Func<TimeTracking, object>)(x => x.User.Name))">Usuario</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="@((Func<TimeTracking, object>)(x => x.Day))">Día</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="@((Func<TimeTracking, object>)(x => x.StartTime))">Hora de Inicio</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="@((Func<TimeTracking, object>)(x => x.EndTime))">Hora de Fin</MudTableSortLabel></MudTh>
+                    <MudTh>Guardar</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="@((Func<TimeTracking, object>)(x => x.MinutesWithinShift))">Tiempo Dentro del Turno</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="@((Func<TimeTracking, object>)(x => x.MinutesOutsideShift))">Tiempo No Computable</MudTableSortLabel></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Usuario">@context.User.Name</MudTd>
+                        <MudTd DataLabel="Día">@context.Day.ToShortDateString()</MudTd>
+                        <MudTd DataLabel="Hora de Inicio">
+                            <MudDatePicker Label="Hora de Inicio" @bind-Time="context.StartTime" />
+                        </MudTd>
+                        <MudTd>
+                            <MudDatePicker Label="Hora de Fin" @bind-Time="context.EndTime" />
+                        </MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Success" OnClick="@(() => SaveChanges(context))" Tooltip="Guardar cambios" />
+                        </MudTd>
+                        <MudTd DataLabel="Minutos Dentro del Turno">@context.MinutesWithinShift.ToString(@"hh\:mm")</MudTd>
+                        <MudTd DataLabel="Minutos Fuera del Turno">@context.MinutesOutsideShift.ToString(@"hh\:mm")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudItem>
+
+            <MudItem xs="4">
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center">
+                    <MudText Typo="Typo.h5">Resumen</MudText>
+                </MudPaper>
+                <MudDivider />
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center">
+                    <MudText Typo="Typo.body2">Hora trabajadas</MudText>
+                </MudPaper>
+                <MudDivider />
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center">
+                    <MudText Typo="Typo.body2">@HorasTrabajadas</MudText>
+                </MudPaper>
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center">
+                    <MudText Typo="Typo.body2">Hora no computables</MudText>
+                </MudPaper>
+                <MudDivider />
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center">
+                    <MudText Typo="Typo.body2">@HorasNoComputables</MudText>
+                </MudPaper>
+
+            </MudItem>
+            <MudItem xs="3">
+
+            </MudItem>
+            <MudItem xs="3">
+
+            </MudItem>
+        </MudGrid>
 }
 
 @code {
-    private WeatherForecast[]? forecasts;
+    private string filterUserId = string.Empty;
+    private DateTime? startDate = null;
+    private DateTime? endDate = null;
+    private List<TimeTracking> timeTrackings = new List<TimeTracking>();
+    private object selectedItem;
+    private HorizontalAlignment horizontalAlignment = HorizontalAlignment.Right;
+    private bool hidePageNumber;
+    private bool hidePagination;
+    private bool hideRowsPerPage;
+    private string rowsPerPageString = "filas por página:";
+    private string infoFormat = "{first_item}/{last_item} de {all_items}";
+    private string allItemsText = "Todos";
+    private string HorasTrabajadas;
+    private string HorasNoComputables;
+    private TimeSpan WorkHours;
+    private TimeSpan OutsideHours;
+    private TimeSpan TheoricHoursHork;
+    private bool isLoading = false;
 
-    protected override async Task OnInitializedAsync()
+
+    private List<User> users = new List<User>();
+    private Guid selectedUserId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Simulate asynchronous loading to demonstrate streaming rendering
-        await Task.Delay(500);
-
-        var startDate = DateOnly.FromDateTime(DateTime.Now);
-        var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
-        forecasts = Enumerable.Range(1, 5).Select(index => new WeatherForecast
+        if (firstRender)
         {
-            Date = startDate.AddDays(index),
-            TemperatureC = Random.Shared.Next(-20, 55),
-            Summary = summaries[Random.Shared.Next(summaries.Length)]
-        }).ToArray();
+            isLoading = true;
+            StateHasChanged();
+            var res = await SessionStorage.GetAsync<Guid>("UserId");
+            if (res.Success)
+            {
+                selectedUserId = res.Value;
+            }
+            users = await UsersService.GetUsersAsync();
+            startDate = new DateTime(DateTime.Now.Year, 1, 1);
+            endDate = new DateTime(DateTime.Now.Year, 12, 31);
+            await ApplyFilters();
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
-    private class WeatherForecast
+    private async Task ApplyFilters()
     {
-        public DateOnly Date { get; set; }
-        public int TemperatureC { get; set; }
-        public string? Summary { get; set; }
-        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+        timeTrackings = await TimeTrackingService.GetFilteredTimeTrackings(selectedUserId, startDate, endDate);
+
+        WorkHours = TimeTrackingService.GetWorkHours(selectedUserId, startDate, endDate);
+        OutsideHours = TimeTrackingService.GetOutSideHours(selectedUserId, startDate, endDate);
+        TheoricHoursHork = await WorkShiftService.GetTheoricalHoursWorked(selectedUserId, startDate, endDate);
+        HorasTrabajadas = TimeFormatHelper.getTimeFormat(WorkHours) + "/" + TimeFormatHelper.getTimeFormat(TheoricHoursHork);
+        HorasNoComputables = TimeFormatHelper.getTimeFormat(OutsideHours);
+        StateHasChanged();
     }
+
+    private async Task RecalcTime()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        await TimeTrackingService.CalculateTimeTrackingAsync();
+        await ApplyFilters();
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task SaveChanges(TimeTracking tracking)
+    {
+        await TimeTrackingService.Update(tracking);
+        await ApplyFilters();
+    }
+
+
+
 }

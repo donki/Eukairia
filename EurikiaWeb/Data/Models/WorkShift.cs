@@ -13,7 +13,8 @@ namespace EukairiaWeb.Data.Models
         public TimeSpan? EndTime { get; set; } // Hora de fin del turno
         public TimeSpan? MaxEntryTime { get; set; } // Hora máxima de entrada
         public TimeSpan? MinExitTime { get; set; } // Hora mínima de salida
-        public double MaxHoursPerDay { get; set; } // Máximo de horas trabajadas por día
+        public TimeSpan? MaxHoursPerDay { get; set; } // Máximo de horas trabajadas por día
+        public TimeSpan? HoursPerDay { get; set; } // Máximo de horas trabajadas por día
         public DaysOfWeek ActiveDays { get; set; } // Días de la semana activos para este turno
 
 
@@ -23,19 +24,6 @@ namespace EukairiaWeb.Data.Models
 
         public DateTime? StartDate { get; set; } // Fecha de inicio de aplicación del turno
         public DateTime? EndDate { get; set; } // Fecha final de aplicación del turno (opcional)
-
-        [NotMapped]
-        public string MaxHoursPerDayString
-        {
-            get => MaxHoursPerDay.ToString();
-            set
-            {
-                if (double.TryParse(value, out double result))
-                {
-                    MaxHoursPerDay = result;
-                }
-            }
-        }
 
     }
 

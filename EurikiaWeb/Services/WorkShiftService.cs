@@ -26,7 +26,7 @@ public class WorkShiftService
             .FirstOrDefaultAsync(ws => ws.Id.Equals(id));
     }
 
-    public async Task CreateWorkShiftAsync(WorkShift workShift)
+    public async Task AddWorkShiftAsync(WorkShift workShift)
     {
         _context.WorkShifts.Add(workShift);
         await _context.SaveChangesAsync();
@@ -64,15 +64,50 @@ public class WorkShiftService
 
         foreach (var shift in userWorkShifts)
         {
-            if ((shift.ActiveDays & dayOfWeek) != 0 && // El día actual está dentro de los días activos
+            if ((shift.ActiveDays & dayOfWeek) != 0 &&
                 timeOfDay >= shift.StartTime &&
                 timeOfDay <= shift.EndTime)
             {
-                return true; // Encuentra un turno que coincide con el día y la hora actual
+                return true;
             }
         }
 
-        return false; // No se encontró ningún turno que coincida con el día y la hora actual
+        return false;
+    }
+
+    public async Task<TimeSpan> GetTheoricalHoursWorked(Guid userId, DateTime? startDate, DateTime? endDate)
+    {
+        var workShifts = await _context.WorkShifts
+            .Where(w => w.UserId == userId &&
+                        w.StartDate.Value.Date <= endDate &&
+                        (w.EndDate.Value.Date >= startDate || w.EndDate == null))
+            .ToListAsync();
+
+        var totalHours = new TimeSpan();
+        var DaysWithHoursPerDay = new List<DateTime>();
+
+        foreach (var workShift in workShifts)
+        {
+            var day = workShift.StartDate.Value.Date;
+            if (DaysWithHoursPerDay.IndexOf(day) == -1)
+            {
+                var shiftsForDay = workShifts.Where(ws => ws.StartDate.Value.Date == day);
+                if (shiftsForDay.Any())
+                {
+                    var maxHoursShift = shiftsForDay.OrderByDescending(ws => ws.HoursPerDay.HasValue ? ws.HoursPerDay.Value : TimeSpan.Zero)
+                                                    .FirstOrDefault();
+
+                    if (maxHoursShift != null && maxHoursShift.HoursPerDay != null)
+                    {
+                        totalHours = totalHours.Add(maxHoursShift.HoursPerDay.Value);
+                    }
+                }
+                DaysWithHoursPerDay.Add(day);
+            }
+        }
+
+        var DateDiff = endDate.Value - startDate.Value;
+        return TimeSpan.FromHours(totalHours.TotalHours * DateDiff.TotalDays);
     }
 
 }

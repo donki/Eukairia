@@ -20,6 +20,8 @@ namespace EukairiaWeb.Data.Models
 
         public List<TimeTracking> TimeTrackings { get; set; }
 
+        public Guid AzureAdGuid { get; set; }
+
     }
 
 }

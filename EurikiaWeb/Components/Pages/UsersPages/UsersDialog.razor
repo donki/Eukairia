@@ -2,28 +2,30 @@
 @using EukairiaWeb.Data.Models
 @using EukairiaWeb.Services
 @using EukairiaWeb.Helpers
+
 @inject UsersService UserService
 @inject RolesService RolesService
-
 @inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
-        <MudForm>
-            <MudTextField Label="Correo electrónico" @bind-Value="User.Email" FullWidth Variant="Variant.Filled" />
-             <MudTextField Label="Nombre" @bind-Value="@User.Name" FullWidth />
-             <MudTextField Label="Contraseña" @bind-Value="@password" InputType="InputType.Password" FullWidth />
-             <MudTextField Label="Confirmar contraseña" @bind-Value="@confirmPassword" InputType="InputType.Password" FullWidth />
+        <form autocomplete="off">
+            <MudForm>
+                <MudTextField Label="Id" @bind-Value="User.UserId" FullWidth Variant="Variant.Filled" ReadOnly/>
+                <MudTextField Label="Correo electrónico" @bind-Value="User.Email" FullWidth Variant="Variant.Filled" />
+                 <MudTextField Label="Nombre" @bind-Value="@User.Name" FullWidth />
+                 <MudTextField Label="Contraseña" UserAttributes=@InputAttributes @bind-Value="@password" InputType="InputType.Password" FullWidth />
+                 <MudTextField Label="Confirmar contraseña" @bind-Value="@confirmPassword" InputType="InputType.Password" FullWidth />
 
-             <!-- Selector de Rol -->
-             <MudSelect Label="Rol" @bind-Value="User.RoleId" FullWidth>
-                @foreach (var role in roles)
-                {
-                    <MudSelectItem T="Guid" Value="@role.RoleId">@role.RoleName</MudSelectItem>
-                }
-            </MudSelect>
-
-        </MudForm>
+                 <!-- Selector de Rol -->
+                 <MudSelect Label="Rol" @bind-Value="User.RoleId" FullWidth>
+                    @foreach (var role in roles)
+                    {
+                        <MudSelectItem T="Guid" Value="@role.RoleId">@role.RoleName</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudForm>
+        </form>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancelar</MudButton>
@@ -32,6 +34,12 @@
 </MudDialog>
 
 @code {
+
+    public Dictionary<string, object> InputAttributes { get; set; } =
+    new Dictionary<string, object>()
+            {
+               { "autocomplete", "new-password" },
+            };
 
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 
@@ -52,7 +60,7 @@
                 if (password != confirmPassword)
                 {
                     Snackbar.Add("Las contraseñas no coinciden", Severity.Error);
-                    return; 
+                    return;
                 }
                 User.Password = SecurityHelper.HashValue(password);
             }
@@ -96,6 +104,7 @@
     protected override async Task OnInitializedAsync()
     {
         roles = await RolesService.GetRolesAsync(); // Asume que este método obtiene los roles disponibles
+
     }
 }
 

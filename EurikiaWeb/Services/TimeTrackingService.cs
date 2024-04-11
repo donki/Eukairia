@@ -17,6 +17,18 @@
             _context = context;
         }
 
+
+
+        public async Task<List<TimeTracking>> GetFilteredTimeTrackings(Guid UserId, DateTime? StartDate, DateTime? EndDate)
+        {
+            return await _context.TimeTrackings.Where(t => t.UserId.Equals(UserId) && t.Day >= StartDate && t.Day <= EndDate).ToListAsync();
+        }
+        public async Task<List<TimeTracking>> GetTimeTrackingsAsync()
+        {
+            return await _context.TimeTrackings.ToListAsync();
+        }
+
+
         public async Task<bool> TryTrackTimeAsync(Guid userId, DateTime startTime, DateTime endTime)
         {
             var workShifts = await _context.WorkShifts
@@ -36,26 +48,53 @@
                 return false;
             }
 
-            var newTrack = new TimeTracking
-            {
-                UserId = userId,
-                Day = startTime.Date,
-                StartTime = startTime,
-                EndTime = endTime,
-                // Aquí podrías añadir más lógica para determinar si el tiempo está dentro o fuera del turno
-                // y ajustar la entidad TimeTracking según sea necesario.
-            };
+            // Busca un TimeTracking existente para el día con EndTime = null
+            var existingTrack = await _context.TimeTrackings
+                .Where(tt => tt.UserId == userId && tt.Day == startTime.Date && tt.EndTime == null)
+                .FirstOrDefaultAsync();
 
-            _context.TimeTrackings.Add(newTrack);
+            if (existingTrack != null)
+            {
+                // Si existe, actualiza el EndTime
+                existingTrack.EndTime = endTime;
+            }
+            else
+            {
+                var newTrack = new TimeTracking
+                {
+                    UserId = userId,
+                    Day = startTime.Date,
+                    StartTime = startTime
+                };
+
+                _context.TimeTrackings.Add(newTrack);
+            }
+
             await _context.SaveChangesAsync();
+            await CalculateTimeTrackingAsync();
             return true;
         }
 
-        public async Task<List<TimeTracking>> GetTodaysTracksAsync()
+
+        public async Task Save(TimeTracking newTrack)
+        {
+            _context.TimeTrackings.Add(newTrack);
+            await _context.SaveChangesAsync();
+            await CalculateTimeTrackingAsync();
+        }
+
+        public async Task Update(TimeTracking newTrack)
+        {
+            _context.TimeTrackings.Update(newTrack);
+            await _context.SaveChangesAsync();
+            await CalculateTimeTrackingAsync();
+        }
+
+        public async Task<List<TimeTracking>> GetTodaysTracksAsync(Guid userId)
         {
             var today = DateTime.Today;
             return await _context.TimeTrackings
-                .Where(t => t.Day == today)
+                .Where(t => t.UserId == userId && t.Day == today)
                 .ToListAsync();
         }
 
@@ -117,34 +156,80 @@
             return $"{(int)timeSpan.TotalHours:00}:{timeSpan.Minutes:00}";
         }
 
-        public async Task<(int minutesWithinShift, int minutesOutsideShift)> CalculateTime(Guid userId, DateTime StarTime, DateTime EndTime)
+
+
+        public async Task CalculateTimeTrackingAsync()
         {
-            var workShifts = await _context.WorkShifts.Where(ws => ws.UserId == userId).ToListAsync();
-            int minutesWithinShift = 0;
-            int minutesOutsideShift = 0;
+            var timeTrackings = _context.TimeTrackings.Where(t => !t.IsCalculated).ToList();
 
-            if (EndTime == null)
+            foreach (var tracking in timeTrackings)
             {
-                return (minutesWithinShift, minutesOutsideShift);
+                tracking.MinutesWithinShift = new TimeSpan();
+                tracking.MinutesOutsideShift = new TimeSpan();
             }
 
-            var shift = workShifts.FirstOrDefault(ws => ws.StartTime <= StarTime.TimeOfDay && ws.EndTime >= (EndTime).TimeOfDay);
-
-            if (shift != null)
+                foreach (var tracking in timeTrackings)
             {
-                minutesWithinShift += (int)((TimeSpan)(StarTime - EndTime)).TotalMinutes;
+                var shifts = _context.WorkShifts.Where(s => s.UserId == tracking.UserId &&
+                                                            s.StartDate <= tracking.Day &&
+                                                            (s.EndDate == null || s.EndDate >= tracking.Day))
+                                                 .ToList();
 
+                foreach (var shift in shifts)
+                {
+                    if (shift.StartTime.HasValue && shift.EndTime.HasValue)
+                    {
+                        var shiftStartDateTime = tracking.Day.Date + shift.StartTime.Value;
+                        var shiftEndDateTime = tracking.Day.Date + shift.EndTime.Value;
+
+                        if (tracking.StartTime >= shiftStartDateTime && tracking.EndTime <= shiftEndDateTime  && tracking.EndTime!= null)
+                        {
+                            tracking.MinutesWithinShift = tracking.MinutesWithinShift.Add(tracking.EndTime.Value - tracking.StartTime);
+                            tracking.IsCalculated = true;
+                        }
+                        else
+                        {
+                            tracking.MinutesOutsideShift = tracking.MinutesOutsideShift.Add(tracking.EndTime.Value - tracking.StartTime);
+                            tracking.IsCalculated = true;
+                        }
+                    }
+                }
+
+                _context.TimeTrackings.Update(tracking);
             }
-            else
-            {
-                minutesOutsideShift += (int)((TimeSpan)(StarTime - EndTime)).TotalMinutes;
 
-
-            }
-
-
-            return (minutesWithinShift, minutesOutsideShift);
+            await _context.SaveChangesAsync();
         }
+
+        public TimeSpan GetWorkHours(Guid selectedUserId, DateTime? startDate, DateTime? endDate)
+        {
+
+            var res = new TimeSpan();
+            var Hours = _context.TimeTrackings.Where(t => t.UserId.Equals(selectedUserId) && t.Day >= startDate && t.Day <= endDate).ToList();
+
+            foreach (var h in Hours)
+            {
+                res = res.Add(h.MinutesWithinShift);
+            }
+
+            return res;
+        }
+
+        public TimeSpan GetOutSideHours(Guid selectedUserId, DateTime? startDate, DateTime? endDate)
+        {
+
+            var res = new TimeSpan();
+            var Hours = _context.TimeTrackings.Where(t => t.UserId.Equals(selectedUserId) && t.Day >= startDate && t.Day <= endDate).ToList();
+
+            foreach (var h in Hours)
+            {
+                res = res.Add(h.MinutesOutsideShift);
+            }
+
+            return res;
+        }
+
+
 
 
     }

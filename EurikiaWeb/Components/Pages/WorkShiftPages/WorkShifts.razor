@@ -5,45 +5,53 @@
 
 @inject IDialogService DialogService
 @inject WorkShiftService WorkShiftService
+@inject TimeTrackingService TimeTrackingService;
 
 <MyMudProviders />
+<MudGrid>
+    <MudItem>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => OpenDialog(new WorkShift()))">Agregar Turno</MudButton>
+    </MudItem>
+    <MudItem>
+        <MudTable Items="@workShifts">
+            <HeaderContent>
+                <MudTh>Usuario</MudTh>
+                <MudTh>Inicio del Turno</MudTh>
+                <MudTh>Fin del Turno</MudTh>
+                <MudTh>Días Activos</MudTh>
+                <MudTh>Fecha de Inicio</MudTh>
+                <MudTh>Fecha de Fin</MudTh>
+                <MudTh>Hora Máxima de Entrada</MudTh>
+                <MudTh>Hora Mínima de Salida</MudTh>
+                <MudTh>Horas por Día</MudTh>
+                <MudTh>Horas Máximas por Día</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Usuario">@context.User.Name</MudTd>
+                    <MudTd DataLabel="Inicio del Turno">@context.StartTime?.ToString(@"hh\:mm")</MudTd>
+                    <MudTd DataLabel="Fin del Turno">@context.EndTime?.ToString(@"hh\:mm")</MudTd>
+                    <MudTd DataLabel="Días Activos">@GetActiveDaysString(context.ActiveDays)</MudTd>
+                    <MudTd DataLabel="Fecha de Inicio">@context.StartDate?.ToShortDateString()</MudTd>
+                    <MudTd DataLabel="Fecha de Fin">@context.EndDate?.ToShortDateString()</MudTd>
+                    <MudTd DataLabel="Hora Máxima de Entrada">@context.MaxEntryTime?.ToString(@"hh\:mm")</MudTd>
+                    <MudTd DataLabel="Hora Mínima de Salida">@context.MinExitTime?.ToString(@"hh\:mm")</MudTd>
+                    <MudTd DataLabel="Horas Máximas por Día">@context.HoursPerDay?.ToString(@"hh\:mm")</MudTd>
+                    <MudTd DataLabel="Horas Máximas por Día">@context.MaxHoursPerDay?.ToString(@"hh\:mm")</MudTd>
+                    <MudTd DataLabel="Acciones">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenDialog(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteWorkShift(context.Id))" Color="Color.Error" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
 
-<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => OpenDialog())">Agregar Turno</MudButton>
-<MudTable Items="@workShifts">
-    <HeaderContent>
-        <MudTh>Usuario</MudTh>
-        <MudTh>Inicio del Turno</MudTh>
-        <MudTh>Fin del Turno</MudTh>
-        <MudTh>Días Activos</MudTh>
-        <MudTh>Fecha de Inicio</MudTh>
-        <MudTh>Fecha de Fin</MudTh>
-        <MudTh>Hora Máxima de Entrada</MudTh>
-        <MudTh>Hora Mínima de Salida</MudTh>
-        <MudTh>Horas Máximas por Día</MudTh>
-        <MudTh>Acciones</MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd DataLabel="Usuario">@context.User.Name</MudTd>
-            <MudTd DataLabel="Inicio del Turno">@context.StartTime?.ToString(@"hh\:mm")</MudTd>
-            <MudTd DataLabel="Fin del Turno">@context.EndTime?.ToString(@"hh\:mm")</MudTd>
-            <MudTd DataLabel="Días Activos">@GetActiveDaysString(context.ActiveDays)</MudTd>
-            <MudTd DataLabel="Fecha de Inicio">@context.StartDate?.ToShortDateString()</MudTd>
-            <MudTd DataLabel="Fecha de Fin">@context.EndDate?.ToShortDateString()</MudTd>
-            <MudTd DataLabel="Hora Máxima de Entrada">@context.MaxEntryTime?.ToString(@"hh\:mm")</MudTd>
-            <MudTd DataLabel="Hora Mínima de Salida">@context.MinExitTime?.ToString(@"hh\:mm")</MudTd>
-            <MudTd DataLabel="Horas Máximas por Día">@context.MaxHoursPerDay</MudTd>
-            <MudTd DataLabel="Acciones">
-                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenDialog(context))" />
-                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteWorkShift(context.Id))" Color="Color.Error" />
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
 
 
 
 
-
-@code {
+    @code {
     private List<WorkShift> workShifts = new();
 
     protected override async Task OnInitializedAsync()
@@ -63,19 +71,25 @@
             };
         var parameters = new DialogParameters();
         if (WorkShift != null) parameters.Add("WorkShift", WorkShift);
-        var dialog = DialogService.Show<WorkShiftDialog>( "Turno de Trabajo", parameters, options);
+        var dialog = DialogService.Show<WorkShiftDialog>("Turno de Trabajo", parameters, options);
         var result = await dialog.Result;
         if (!result.Cancelled)
         {
             workShifts = await WorkShiftService.GetAllWorkShiftsAsync();
-            StateHasChanged(); 
+            await TimeTrackingService.CalculateTimeTrackingAsync();
+            StateHasChanged();
         }
     }
 
     async Task DeleteWorkShift(Guid workShiftId)
     {
-        await WorkShiftService.DeleteWorkShiftAsync(workShiftId);
-        workShifts = await WorkShiftService.GetAllWorkShiftsAsync(); 
+        bool? result = await DialogService.ShowMessageBox("Confirmación", $"¿Estás seguro de que quieres eliminar el registro?", yesText: "Eliminar", cancelText: "Cancelar");
+
+        if (result == true)
+        {
+            await WorkShiftService.DeleteWorkShiftAsync(workShiftId);
+            workShifts = await WorkShiftService.GetAllWorkShiftsAsync();
+        }
     }
 
     private string GetActiveDaysString(DaysOfWeek activeDays)
@@ -97,4 +111,4 @@
         return string.Join(", ", activeDaysList);
     }
 
-}
+    }

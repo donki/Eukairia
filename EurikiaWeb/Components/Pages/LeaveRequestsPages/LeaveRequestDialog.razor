@@ -1,0 +1,54 @@
+﻿@inherits MudDialog
+@rendermode InteractiveServer
+@inject LeaveRequestService LeaveRequestService
+@using EukairiaWeb.Data.Models
+@using EukairiaWeb.Services
+@using EukairiaWeb.Helpers
+@inject ISnackbar Snackbar
+@inject ProtectedSessionStorage SessionStorage
+
+<MudDialog>
+    <DialogContent>
+        <MudForm>
+            <MudDatePicker Label="Fecha de Inicio" @bind-Date="@leaveRequest.StartDate" />
+            <MudDatePicker Label="Fecha de fin" @bind-Date="@leaveRequest.EndDate" />
+            <MudSelect Label="Tipo de permiso" T="LeaveType" @bind-Value="leaveRequest.LeaveType">
+                <MudSelectItem Value="LeaveType.Paid">Retribuido</MudSelectItem>
+                <MudSelectItem Value="LeaveType.UnPaid">No retribuido</MudSelectItem>
+                <MudSelectItem Value="LeaveType.Vacation">Vacaciones</MudSelectItem>
+            </MudSelect>
+            <MudTextField Label="Razón" @bind-Value="@leaveRequest.Reason" T="string" Multiline="true" Rows="4" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Save" Color="Color.Primary">Enviar solicitud</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public LeaveRequest leaveRequest { get; set; } = new LeaveRequest();
+
+    private async Task Save()
+    {
+        var result = await SessionStorage.GetAsync<Guid>("UserId");
+        if (!result.Success || (!result.Value.Equals(Guid.Empty)))
+        {
+            var UserId = result.Value;
+            leaveRequest.UserId = UserId;
+
+        }
+        await LeaveRequestService.AddLeaveRequestAsync(leaveRequest);
+        Snackbar.Add("Petición registrada", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Close(DialogResult.Cancel());
+    }
+}
+}
+}

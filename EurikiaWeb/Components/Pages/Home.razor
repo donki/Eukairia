@@ -1,25 +1,24 @@
 ﻿@page "/home"
-
-@using EukairiaWeb.Data.Models
-
 @rendermode InteractiveServer
+@using EukairiaWeb.Data.Models
+@using EukairiaWeb.Components.Layout
+@using System.Security.Claims
+
 @inject ProtectedSessionStorage SessionStorage
-@inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 @inject TimeTrackingService TimeTrackingService
 @inject WorkShiftService WorkShiftService;
 @inject UsersService UsersService
+@layout MainLayout
 
 <MudSnackbarProvider />
 
 <PageTitle>Home</PageTitle>
 
-
-
 <MudContainer Class="mt-16 px-8" MaxWidth="MaxWidth.False">
     <MudGrid>
         <MudItem xs="6" sm="3">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 100px;"><MudButton OnClick="TrackTime" Color="Color.Primary">Registrar</MudButton></MudPaper>
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 100px;"><MudButton OnClick="TrackTime" Color="Color.Primary">Registrar Hora</MudButton></MudPaper>
         </MudItem>
         <MudItem xs="6" sm="9">
             <MudGrid>
@@ -29,14 +28,14 @@
                             <HeaderContent>
                                 <MudTh>Inicio</MudTh>
                                 <MudTh>Final</MudTh>
-                                <MudTh>Minutos dentro del turno</MudTh>
-                                <MudTh>Minutos fuera del turno</MudTh>
+                                <MudTh>Tiempo dentro del turno</MudTh>
+                                <MudTh>Tiempo No Computable</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                     <MudTd DataLabel="Start Time">@context.StartTime.ToString("HH:mm")</MudTd>
                                     <MudTd DataLabel="End Time">@context.EndTime?.ToString("HH:mm")</MudTd>
-                                    <MudTd DataLabel="End Time">@context.MinutesWithinShift</MudTd>
-                                    <MudTd DataLabel="End Time">@context.MinutesOutsideShift</MudTd>
+                                    <MudTd DataLabel="End Time">@context.MinutesWithinShift.ToString(@"hh\:mm")</MudTd>
+                                    <MudTd DataLabel="End Time">@context.MinutesOutsideShift.ToString(@"hh\:mm")</MudTd>
                             </RowTemplate>
                         </MudTable>
                     </MudPaper>
@@ -65,41 +64,7 @@
     private List<TimeTracking> tracks = new();
     private TimeTrackingSummary Summary;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        var result = await SessionStorage.GetAsync<Guid>("UserId");
-        if (!result.Success || (!result.Value.Equals(Guid.Empty)))
-        {
-            UserId = result.Value;
-        }
-        tracks = await TimeTrackingService.GetTodaysTracksAsync();
-        Summary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
 
-        try
-        {
-            var result2 = await SessionStorage.GetAsync<bool>("isAuthenticated");
-            if (!result2.Success || !result2.Value)
-            {
-                NavigationManager.NavigateTo("/");
-
-            }
-        }
-        catch (InvalidOperationException ex)
-        {
-            Console.WriteLine($"Error al obtener isAuthenticated: {ex.Message}");
-            // Considera manejar el error de manera adecuada aquí
-        }
-
-        var result3 = await SessionStorage.GetAsync<string>("Name");
-
-        if (result3.Success)
-        {
-
-            UsersService.UserName = result3.Value;
-
-        }
-        StateHasChanged();
-    }
 
     private async Task TrackTime()
     {
@@ -108,13 +73,13 @@
             if(await WorkShiftService.CanRegisterTime(UserId,DateTime.Now))
             {
                 await TimeTrackingService.TryTrackTimeAsync(UserId, DateTime.Now, DateTime.Now);
-                tracks = await TimeTrackingService.GetTodaysTracksAsync();
+                tracks = await TimeTrackingService.GetTodaysTracksAsync(UserId);
                 Summary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
                 StateHasChanged();
 
             } else
             {
-                Snackbar.Add("El usuario no tiene turnos.", Severity.Error);
+                Snackbar.Add("No se ha encontrado un turno para el usuario actual válido. No se puede iniciar el turno.", Severity.Error);
             }
         }
     }

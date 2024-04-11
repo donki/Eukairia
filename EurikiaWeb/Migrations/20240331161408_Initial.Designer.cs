@@ -3,6 +3,7 @@ using System;
 using EukairiaWeb.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,44 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EukairiaWeb.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240331161408_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.0-preview.2.24128.4");
-
-            modelBuilder.Entity("EukairiaWeb.Data.Models.LeaveRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("EndDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsPending")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("LeaveType")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("LeaveRequests");
-                });
 
             modelBuilder.Entity("EukairiaWeb.Data.Models.Permission", b =>
                 {
@@ -127,9 +98,6 @@ namespace EukairiaWeb.Migrations
                 {
                     b.Property<Guid>("UserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("AzureAdGuid")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
@@ -402,17 +370,6 @@ namespace EukairiaWeb.Migrations
                     b.HasIndex("RolesRoleId");
 
                     b.ToTable("RolePermissions", (string)null);
-                });
-
-            modelBuilder.Entity("EukairiaWeb.Data.Models.LeaveRequest", b =>
-                {
-                    b.HasOne("EukairiaWeb.Data.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("EukairiaWeb.Data.Models.TimeTracking", b =>
