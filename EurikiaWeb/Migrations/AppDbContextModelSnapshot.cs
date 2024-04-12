@@ -26,7 +26,7 @@ namespace EukairiaWeb.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsPending")
+                    b.Property<int>("IsPending")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("LeaveType")

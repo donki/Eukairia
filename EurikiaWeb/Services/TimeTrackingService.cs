@@ -31,31 +31,12 @@
 
         public async Task<bool> TryTrackTimeAsync(Guid userId, DateTime startTime, DateTime endTime)
         {
-            var workShifts = await _context.WorkShifts
-                .Where(ws => ws.UserId == userId &&
-                             ws.StartDate <= startTime &&
-                             (ws.EndDate == null || ws.EndDate >= startTime))
-                .ToListAsync();
-
-            var applicableShift = workShifts.FirstOrDefault(ws =>
-                ws.ActiveDays.HasFlag((DaysOfWeek)(1 << (int)startTime.DayOfWeek)) &&
-                ws.StartTime <= startTime.TimeOfDay &&
-                (endTime == null || ws.EndTime >= endTime.TimeOfDay));
-
-            if (applicableShift == null)
-            {
-                // No se encontró un turno aplicable. No se permite registrar el tiempo.
-                return false;
-            }
-
-            // Busca un TimeTracking existente para el día con EndTime = null
             var existingTrack = await _context.TimeTrackings
                 .Where(tt => tt.UserId == userId && tt.Day == startTime.Date && tt.EndTime == null)
                 .FirstOrDefaultAsync();
 
             if (existingTrack != null)
             {
-                // Si existe, actualiza el EndTime
                 existingTrack.EndTime = endTime;
             }
             else
@@ -166,9 +147,10 @@
             {
                 tracking.MinutesWithinShift = new TimeSpan();
                 tracking.MinutesOutsideShift = new TimeSpan();
+                tracking.IsCalculated = false;
             }
 
-                foreach (var tracking in timeTrackings)
+            foreach (var tracking in timeTrackings)
             {
                 var shifts = _context.WorkShifts.Where(s => s.UserId == tracking.UserId &&
                                                             s.StartDate <= tracking.Day &&
@@ -182,15 +164,22 @@
                         var shiftStartDateTime = tracking.Day.Date + shift.StartTime.Value;
                         var shiftEndDateTime = tracking.Day.Date + shift.EndTime.Value;
 
-                        if (tracking.StartTime >= shiftStartDateTime && tracking.EndTime <= shiftEndDateTime  && tracking.EndTime!= null)
+                        if (tracking.EndTime != null && !tracking.IsCalculated)
                         {
-                            tracking.MinutesWithinShift = tracking.MinutesWithinShift.Add(tracking.EndTime.Value - tracking.StartTime);
-                            tracking.IsCalculated = true;
-                        }
-                        else
-                        {
-                            tracking.MinutesOutsideShift = tracking.MinutesOutsideShift.Add(tracking.EndTime.Value - tracking.StartTime);
-                            tracking.IsCalculated = true;
+                            tracking.EndTime = new DateTime(tracking.EndTime.Value.Year, tracking.EndTime.Value.Month, tracking.EndTime.Value.Day, tracking.EndTime.Value.Hour, tracking.EndTime.Value.Minute, 0);
+                            
+                            tracking.StartTime = new DateTime(tracking.StartTime.Year, tracking.StartTime.Month, tracking.StartTime.Day, tracking.StartTime.Hour, tracking.StartTime.Minute, 0);
+
+                            if (tracking.StartTime >= shiftStartDateTime && tracking.EndTime <= shiftEndDateTime)
+                            {
+                                tracking.MinutesWithinShift = tracking.MinutesWithinShift.Add(tracking.EndTime.Value - tracking.StartTime);
+                                tracking.IsCalculated = true;
+                            }
+                            else
+                            {
+                                tracking.MinutesOutsideShift = tracking.MinutesOutsideShift.Add(tracking.EndTime.Value - tracking.StartTime);
+                                tracking.IsCalculated = true;
+                            }
                         }
                     }
                 }

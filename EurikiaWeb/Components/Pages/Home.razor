@@ -11,14 +11,12 @@
 @inject UsersService UsersService
 @layout MainLayout
 
-<MudSnackbarProvider />
-
 <PageTitle>Home</PageTitle>
 
 <MudContainer Class="mt-16 px-8" MaxWidth="MaxWidth.False">
     <MudGrid>
         <MudItem xs="6" sm="3">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 100px;"><MudButton OnClick="TrackTime" Color="Color.Primary">Registrar Hora</MudButton></MudPaper>
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 100px; text-align:center; align-content:center; align-items:center"><MudButton Size="Size.Large" StartIcon="@Icons.Material.Filled.AddAlarm" OnClick="TrackTime" Color="Color.Primary">Registrar Hora</MudButton></MudPaper>
         </MudItem>
         <MudItem xs="6" sm="9">
             <MudGrid>

@@ -1,6 +1,5 @@
 ﻿using EukairiaWeb.Data;
 using EukairiaWeb.Data.Models;
-using EukairiaWeb.Migrations;
 using Microsoft.EntityFrameworkCore;
 
 namespace EukairiaWeb.Services

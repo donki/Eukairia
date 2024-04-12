@@ -6,8 +6,6 @@
 @inject IDialogService DialogService
 @inject ProtectedSessionStorage SessionStorage
 
-<MyMudProviders />
-
 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="(() =>OpenLeaveRequestDialog(new LeaveRequest()))">Agregar Solicitud</MudButton>
 
 <MudTable Items="@leaveRequests">

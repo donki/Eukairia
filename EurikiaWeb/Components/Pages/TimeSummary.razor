@@ -9,7 +9,6 @@
 @inject ProtectedSessionStorage SessionStorage;
 @inject NavigationManager NavigationManager
 
-<MyMudProviders />
 @if (isLoading)
 {
     <div class="loading-overlay">
@@ -60,12 +59,8 @@ else
                 <RowTemplate>
                     <MudTd DataLabel="Usuario">@context.User.Name</MudTd>
                         <MudTd DataLabel="Día">@context.Day.ToShortDateString()</MudTd>
-                        <MudTd DataLabel="Hora de Inicio">
-                            <MudDatePicker Label="Hora de Inicio" @bind-Time="context.StartTime" />
-                        </MudTd>
-                        <MudTd>
-                            <MudDatePicker Label="Hora de Fin" @bind-Time="context.EndTime" />
-                        </MudTd>
+                        <MudTd DataLabel="Hora de Inicio">@context.StartTime.ToString(@"hh\:mm")</MudTd>
+                        <MudTd DataLabel="Hora de Fin">@context.EndTime?.ToString(@"hh\:mm")</MudTd>
                         <MudTd>
                             <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Success" OnClick="@(() => SaveChanges(context))" Tooltip="Guardar cambios" />
                         </MudTd>

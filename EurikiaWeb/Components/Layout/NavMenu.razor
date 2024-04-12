@@ -6,14 +6,13 @@
 <MudNavMenu>
     <MudNavLink Href="home" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
     <MudNavLink Href="timesummary" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Schedule">Registro horario</MudNavLink>
-    <MudNavLink Href="users" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person2">Usuarios</MudNavLink>
     <MudNavLink Href="leaverequest" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.TagFaces">Solicitar permiso</MudNavLink>
     <MudNavLink Href="calendar" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.CalendarMonth">Calendario</MudNavLink>
     <MudNavGroup Title="Administración" Expanded="false">
-        <MudNavLink Href="manageleaverequest" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AddReaction">Gestionar permisos</MudNavLink>
-
+        <MudNavLink Href="users" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person2">Usuarios</MudNavLink>
         <MudNavLink Href="workshifts" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FilterTiltShift">Turnos</MudNavLink>
-        <MudNavLink Href="security" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person2">Seguridad</MudNavLink>
+        <MudNavLink Href="manageleaverequest" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AddReaction">Gestionar permisos</MudNavLink>
+        <MudNavLink Href="security" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person2" Disabled>Seguridad</MudNavLink>
         <MudNavLink Href="import" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dataset">Importar Datos</MudNavLink>
     </MudNavGroup>
     <MudNavLink @onclick="Dologout" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Logout">Salir</MudNavLink>

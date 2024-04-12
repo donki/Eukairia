@@ -50,21 +50,20 @@ public class WorkShiftService
 
     public async Task<bool> CanRegisterTime(Guid userId, DateTime dateTime)
     {
-        var userWorkShifts = await _context.WorkShifts
+        /*var userWorkShifts = await _context.WorkShifts
             .Where(ws => ws.UserId == userId &&
                          ws.StartDate <= dateTime &&
                          (ws.EndDate == null || ws.EndDate >= dateTime))
             .ToListAsync();
 
-        // Verificar si el día y la hora actual caen dentro de algún turno válido
-        if (!userWorkShifts.Any()) return false; // No hay turnos asignados
+        if (!userWorkShifts.Any()) return false; 
 
-        var dayOfWeek = (DaysOfWeek)(1 << (int)dateTime.DayOfWeek);
+        var dayOfWeek = dateTime.DayOfWeek;
         var timeOfDay = dateTime.TimeOfDay;
 
         foreach (var shift in userWorkShifts)
         {
-            if ((shift.ActiveDays & dayOfWeek) != 0 &&
+            if (shift.ActiveDays.HasFlag(dayOfWeek) &&
                 timeOfDay >= shift.StartTime &&
                 timeOfDay <= shift.EndTime)
             {
@@ -72,7 +71,8 @@ public class WorkShiftService
             }
         }
 
-        return false;
+        return false;*/
+        return true;
     }
 
     public async Task<TimeSpan> GetTheoricalHoursWorked(Guid userId, DateTime? startDate, DateTime? endDate)
