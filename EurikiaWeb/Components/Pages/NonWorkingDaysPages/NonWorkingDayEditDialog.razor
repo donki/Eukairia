@@ -1,0 +1,36 @@
+﻿@rendermode InteractiveServer
+@using EukairiaWeb.Data.Models
+@inject NonWorkingDayService NonWorkingDayService
+
+<MudDialog>
+    <DialogContent>
+        <MudForm>
+            <MudDatePicker @bind-Value="nonWorkingDay.Date" Label="Fecha" />
+            <MudTextField @bind-Value="nonWorkingDay.Description" Label="Description" FullWidth />
+         </MudForm>
+     </DialogContent>
+     <DialogActions>
+         <MudButton OnClick="Save">Save</MudButton>
+         <MudButton OnClick="@Cancel">Cancel</MudButton>
+     </DialogActions>
+ </MudDialog>
+
+ @code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public NonWorkingDay nonWorkingDay { get; set; } = new NonWorkingDay();
+
+    private async Task Save()
+    {
+        if (nonWorkingDay.Id == Guid.Empty)
+            await NonWorkingDayService.AddNonWorkingDayAsync(nonWorkingDay);
+        else
+            await NonWorkingDayService.UpdateNonWorkingDayAsync(nonWorkingDay);
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

@@ -24,6 +24,7 @@
                         <MudSelectItem T="Guid" Value="@role.RoleId">@role.RoleName</MudSelectItem>
                     }
                 </MudSelect>
+                <MudTextField Label="Vacaciones Totales" @bind-Value="@User.TotalVacations" FullWidth />
             </MudForm>
         </form>
     </DialogContent>

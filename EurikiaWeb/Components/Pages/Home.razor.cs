@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Mvc;
 using EukairiaWeb.Services;
+using EukairiaWeb.Data.Models;
 
 namespace EukairiaWeb.Components.Pages
 {
@@ -9,8 +10,9 @@ namespace EukairiaWeb.Components.Pages
     {
         [Inject]
         protected NavigationManager? NavigationManager { get; set; }
-        [Inject]
-        protected GlobalService? GlobalService { get; set; }
+
+
+        private User User { get; set; }
 
 
 
@@ -20,9 +22,11 @@ namespace EukairiaWeb.Components.Pages
             if (!result.Success || (!result.Value.Equals(Guid.Empty)))
             {
                 UserId = result.Value;
+                User = UsersService.GetUserById(UserId);
             }
             tracks = await TimeTrackingService.GetTodaysTracksAsync(UserId);
-            Summary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
+            TimeTrackingSummary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
+            LeaveRequestSummary = await LeaveRequestService.CalculateLeaveRequestSummaryThisYearAsync(UserId);
 
             try
             {

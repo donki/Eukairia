@@ -22,6 +22,8 @@ namespace EukairiaWeb.Data.Models
 
         public Guid AzureAdGuid { get; set; }
 
+        public int TotalVacations { get; set; }
+
     }
 
 }

@@ -7,6 +7,7 @@
 @inject ProtectedSessionStorage SessionStorage
 @inject ISnackbar Snackbar
 @inject TimeTrackingService TimeTrackingService
+@inject LeaveRequestService LeaveRequestService;
 @inject WorkShiftService WorkShiftService;
 @inject UsersService UsersService
 @layout MainLayout
@@ -27,40 +28,59 @@
                                 <MudTh>Inicio</MudTh>
                                 <MudTh>Final</MudTh>
                                 <MudTh>Tiempo dentro del turno</MudTh>
-                                <MudTh>Tiempo No Computable</MudTh>
+                                <MudTh>Tiempo no computable</MudTh>
                             </HeaderContent>
                             <RowTemplate>
-                                    <MudTd DataLabel="Start Time">@context.StartTime.ToString("HH:mm")</MudTd>
+                                <MudTd DataLabel="Start Time">@context.StartTime.ToString("HH:mm")</MudTd>
                                     <MudTd DataLabel="End Time">@context.EndTime?.ToString("HH:mm")</MudTd>
                                     <MudTd DataLabel="End Time">@context.MinutesWithinShift.ToString(@"hh\:mm")</MudTd>
                                     <MudTd DataLabel="End Time">@context.MinutesOutsideShift.ToString(@"hh\:mm")</MudTd>
-                            </RowTemplate>
-                        </MudTable>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-        </MudItem>
-            <MudItem xs="6" sm="3" Class="center-text">
-                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Hoy <br /> @Summary?.Daily</MudText></MudPaper>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
             </MudItem>
             <MudItem xs="6" sm="3" Class="center-text">
-                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Semana Actual<br /> @Summary?.Weekly</MudText></MudPaper>
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Hoy <br /> @TimeTrackingSummary?.Daily</MudText></MudPaper>
             </MudItem>
             <MudItem xs="6" sm="3" Class="center-text">
-                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Mes Actual<br /> @Summary?.Monthly</MudText></MudPaper>
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Semana Actual<br /> @TimeTrackingSummary?.Weekly</MudText></MudPaper>
             </MudItem>
             <MudItem xs="6" sm="3" Class="center-text">
-                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Año Actual<br /> @Summary?.Yearly</MudText></MudPaper>
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Mes Actual<br /> @TimeTrackingSummary?.Monthly</MudText></MudPaper>
             </MudItem>
-     </MudGrid>
-</MudContainer>
+            <MudItem xs="6" sm="3" Class="center-text">
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Año Actual<br /> @TimeTrackingSummary?.Yearly</MudText></MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3" Class="center-text">
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Vacaciones totales este año <br /> @User?.TotalVacations</MudText></MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3" Class="center-text">
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Vacaciones totales solicitadas <br /> @LeaveRequestSummary?.TotalVacationRequestedDays</MudText></MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3" Class="center-text">
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Vacaciones pendientes de aprobar <br /> @LeaveRequestSummary?.PendingVacationDays</MudText></MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3" Class="center-text">
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Vacaciones aprobadas <br /> @LeaveRequestSummary?.ApprovedVacationDays</MudText></MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3" Class="center-text">
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Permisos retribuidos<br /> @LeaveRequestSummary?.TotalPaidLeaveDays </MudText></MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3" Class="center-text">
+                <MudPaper Elevation="2" Class="pa-4 center-text" Style="text-align:center"><MudText Typo="Typo.h6">Permisos no retribuidos<br /> @LeaveRequestSummary?.TotalUnpaidLeaveDays </MudText></MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudContainer>
 
 
     @code {
 
     private Guid UserId = Guid.Empty;
     private List<TimeTracking> tracks = new();
-    private TimeTrackingSummary Summary;
+    private TimeTrackingSummary TimeTrackingSummary;
+    private LeaveRequestSummary LeaveRequestSummary;
 
 
 
@@ -68,14 +88,15 @@
     {
         if (!UserId.Equals(Guid.Empty))
         {
-            if(await WorkShiftService.CanRegisterTime(UserId,DateTime.Now))
+            if (await WorkShiftService.CanRegisterTime(UserId, DateTime.Now))
             {
                 await TimeTrackingService.TryTrackTimeAsync(UserId, DateTime.Now, DateTime.Now);
                 tracks = await TimeTrackingService.GetTodaysTracksAsync(UserId);
-                Summary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
+                TimeTrackingSummary = await TimeTrackingService.GetTimeTrackingSummary(UserId);
                 StateHasChanged();
 
-            } else
+            }
+            else
             {
                 Snackbar.Add("No se ha encontrado un turno para el usuario actual válido. No se puede iniciar el turno.", Severity.Error);
             }

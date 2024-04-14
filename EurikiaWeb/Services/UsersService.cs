@@ -28,6 +28,11 @@ namespace EukairiaWeb.Services
             return _context.Users.ToList().Find(x => x.Email.Equals(email));
         }
 
+        public User GetUserById(Guid UserId)
+        {
+            return _context.Users.ToList().Find(x => x.UserId.Equals(UserId));
+        }
+
         public async Task<User> AddUserAsync(User user)
         {
             try

@@ -1,0 +1,101 @@
+﻿@page "/nonworkingdays"
+@rendermode InteractiveServer
+@using EukairiaWeb.Data.Models
+@inject NonWorkingDayService NonWorkingDayService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => OpenEditDialog(new NonWorkingDay()))">Agregar Dia</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddWeekendsAsNonWorkingDays">Añadir fines de semana como festivos</MudButton>
+
+<MudTable Items="nonWorkingDays">
+    <HeaderContent>
+        <MudTh>Fecha</MudTh>
+        <MudTh>Tipo</MudTh>
+        <MudTh>Descripción</MudTh>
+        <MudTh>Acciones</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Date.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd>@context.Description</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenEditDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteNonWorkingDay(context.Id))" Color="Color.Error" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    @code {
+    private List<NonWorkingDay> nonWorkingDays;
+
+    protected override async Task OnInitializedAsync()
+    {
+        nonWorkingDays = await NonWorkingDayService.GetAllNonWorkingDaysAsync();
+    }
+
+    private void OpenEditDialog(NonWorkingDay day)
+    {
+        var parameters = new DialogParameters();
+        if (day != null) parameters.Add("NonWorkingDay", day);
+
+        var dialog = DialogService.Show<NonWorkingDayEditDialog>("Dias festivos", parameters);
+        dialog.Result.ContinueWith(result =>
+        {
+            if (!result.Result.Cancelled)
+            {
+                LoadNonWorkingDays(); // Reload the list to show updates
+            }
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+    }
+
+    private async Task DeleteNonWorkingDay(Guid id)
+    {
+        await NonWorkingDayService.DeleteNonWorkingDayAsync(id);
+        nonWorkingDays = await NonWorkingDayService.GetAllNonWorkingDaysAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadNonWorkingDays()
+    {
+        nonWorkingDays = await NonWorkingDayService.GetAllNonWorkingDaysAsync();
+        StateHasChanged();
+    }
+
+    private async Task AddWeekendsAsNonWorkingDays()
+    {
+        var year = DateTime.Now.Year;
+        var startDate = new DateTime(year, 1, 1);
+        var endDate = new DateTime(year, 12, 31);
+
+        List<NonWorkingDay> weekends = new List<NonWorkingDay>();
+
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+            {
+                if (!await NonWorkingDayService.Exists(date)) // Ensure the day does not already exist
+                {
+                    weekends.Add(new NonWorkingDay
+                        {
+                            Date = date,
+                            Description = "Fin de semana"
+                        });
+                }
+            }
+        }
+
+        if (weekends.Any())
+        {
+            foreach (var weekend in weekends)
+            {
+                await NonWorkingDayService.AddNonWorkingDayAsync(weekend);
+            }
+            await LoadNonWorkingDays(); // Reload to display new non-working days
+            Snackbar.Add($"{weekends.Count} weekends added as non-working days", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("No new weekends to add", Severity.Info);
+        }
+    }
+}

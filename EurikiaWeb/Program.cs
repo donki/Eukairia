@@ -34,7 +34,9 @@ namespace EukairiaWeb
             builder.Services.AddScoped<RolesService>();
             builder.Services.AddScoped<LeaveRequestService>();
             builder.Services.AddScoped<GlobalService>();
-            
+            builder.Services.AddScoped<NonWorkingDayService>();          
+
+
 
             builder.WebHost.ConfigureKestrel(serverOptions =>
             {
